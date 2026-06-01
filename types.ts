@@ -1163,6 +1163,7 @@ export type GameAction =
     | { type: 'CHANGE_TAB'; payload: Tab }
     | { type: 'SWITCH_YOUTUBE_CHANNEL'; payload: 'artist' | 'label' }
     | { type: 'CHANGE_ACTIVE_ARTIST'; payload: string }
+    | { type: 'SYNC_DATE'; payload: number }
     | { type: 'PROGRESS_WEEK' }
     | { type: 'RECORD_SONG'; payload: { song: Song; cost: number } }
     | { type: 'CREATE_REMIX_PACK'; payload: { songs: Song[]; cost: number } }

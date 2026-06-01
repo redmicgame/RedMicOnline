@@ -451,7 +451,7 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
     if (!gameState.offlineMode && gameState.onlinePosts) {
         // Map online posts to XPost type
         const mappedOnlinePosts: XPost[] = gameState.onlinePosts
-            .filter(p => !p.gameYear || (p.gameYear === gameState.date.year && p.gameWeek === gameState.date.week))
+            .filter(p => !p.gameYear || p.gameYear <= gameState.date.year) // filter out broken future posts
             .map(p => ({
                 id: p.id,
                 authorId: p.authorId,

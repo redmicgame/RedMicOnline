@@ -57,6 +57,8 @@ const GameUI: React.FC = () => {
             
             if (globalWeekStamp > localAbsoluteWeek) {
                 dispatch({ type: 'PROGRESS_WEEK' });
+            } else if (globalWeekStamp < localAbsoluteWeek) {
+                dispatch({ type: 'SYNC_DATE', payload: globalWeekStamp });
             }
         };
 

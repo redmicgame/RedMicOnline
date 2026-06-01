@@ -992,6 +992,19 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 ...state,
                 activeArtistId: action.payload,
             };
+        case 'SYNC_DATE': {
+            const globalWeekStamp = action.payload;
+            let year = 2000;
+            let week = globalWeekStamp;
+            while (week > 52) {
+                week -= 52;
+                year++;
+            }
+            return {
+                ...state,
+                date: { year, week }
+            };
+        }
         case 'PROGRESS_WEEK': {
             // NPC Churn Logic: Simulate new songs releasing
             let newNpcsList = [...state.npcs];
