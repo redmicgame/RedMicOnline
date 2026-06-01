@@ -1,6 +1,6 @@
 
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { GameProvider, useGame } from './context/GameContext';
 import StartScreen from './components/StartScreen';
 import GameUI from './components/GameUI';
@@ -300,6 +300,29 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
+    const [isServerDown, setIsServerDown] = useState(false);
+
+    useEffect(() => {
+        const handleServerDown = () => setIsServerDown(true);
+        window.addEventListener('server-down', handleServerDown);
+        return () => window.removeEventListener('server-down', handleServerDown);
+    }, []);
+
+    if (isServerDown) {
+        return (
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white text-center p-8 space-y-4 font-sans">
+                <h1 className="text-4xl font-bold text-red-500 mb-4">Red Mic: Online is temporarily down!</h1>
+                <p className="text-xl text-zinc-300">We'll be back soon.</p>
+                <button 
+                    onClick={() => window.location.reload()}
+                    className="mt-8 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-full font-semibold transition-colors"
+                >
+                    Retry Connection
+                </button>
+            </div>
+        );
+    }
+
     return (
         <GameProvider>
             <AppContent />

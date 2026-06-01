@@ -36,6 +36,11 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
+  
+  if (errInfo.error.includes('resource-exhausted') || errInfo.error.includes('Quota limit exceeded')) {
+     window.dispatchEvent(new Event('server-down'));
+  }
+
   throw new Error(JSON.stringify(errInfo));
 }
 
@@ -260,7 +265,7 @@ export const publishOnlineSong = async (artistId: string, artistName: string, so
             createdAt: Date.now()
         });
     } catch(err) {
-        console.error("Error publishing online song", err);
+        handleFirestoreError(err, OperationType.WRITE, 'online_songs');
     }
 };
 
@@ -272,7 +277,7 @@ export const updateOnlineSongStreams = async (songId: string, allTimeStreams: nu
             updatedAt: Date.now()
         }, { merge: true });
     } catch(err) {
-        console.error("Error updating online song streams", err);
+        handleFirestoreError(err, OperationType.WRITE, 'online_songs');
     }
 };
 
@@ -284,7 +289,7 @@ export const getOnlineSpotifySongsChart = async () => {
         snapshot.forEach(doc => songs.push({ id: doc.id, ...doc.data() }));
         return songs;
     } catch(err) {
-        console.error("Error fetching online songs chart", err);
+        handleFirestoreError(err, OperationType.LIST, 'online_songs');
         return [];
     }
 };
@@ -301,7 +306,7 @@ export const publishOnlineAlbum = async (artistId: string, artistName: string, a
             createdAt: Date.now()
         });
     } catch(err) {
-        console.error("Error publishing online album", err);
+        handleFirestoreError(err, OperationType.WRITE, 'online_albums');
     }
 };
 
@@ -313,7 +318,7 @@ export const updateOnlineAlbumStreams = async (albumId: string, allTimeStreams: 
             updatedAt: Date.now()
         }, { merge: true });
     } catch(err) {
-        console.error("Error updating online album streams", err);
+        handleFirestoreError(err, OperationType.WRITE, 'online_albums');
     }
 };
 
@@ -325,7 +330,7 @@ export const getOnlineSpotifyAlbumsChart = async () => {
         snapshot.forEach(doc => albums.push({ id: doc.id, ...doc.data() }));
         return albums;
     } catch(err) {
-        console.error("Error fetching online albums chart", err);
+        handleFirestoreError(err, OperationType.LIST, 'online_albums');
         return [];
     }
 };
