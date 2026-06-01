@@ -9,11 +9,16 @@ export const useOnlineSync = () => {
     useEffect(() => {
         if (gameState.offlineMode) return;
         
+        const EPOCH = 1780344837000;
+
         // Listen to top posts
         const qPosts = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(50));
         const unsubPosts = onSnapshot(qPosts, (snapshot) => {
             const posts: any[] = [];
-            snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.createdAt >= EPOCH) posts.push({ id: doc.id, ...data });
+            });
             dispatch({ type: 'SYNC_ONLINE_POSTS', payload: posts });
         });
 
@@ -21,7 +26,10 @@ export const useOnlineSync = () => {
         const qSongs = query(collection(db, 'songs'), orderBy('createdAt', 'desc'), limit(100));
         const unsubSongs = onSnapshot(qSongs, (snapshot) => {
             const songs: any[] = [];
-            snapshot.forEach(doc => songs.push({ id: doc.id, ...doc.data() }));
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.createdAt >= EPOCH) songs.push({ id: doc.id, ...data });
+            });
             dispatch({ type: 'SYNC_ONLINE_SONGS', payload: songs });
         });
         
@@ -29,7 +37,10 @@ export const useOnlineSync = () => {
         const qAlbums = query(collection(db, 'albums'), orderBy('createdAt', 'desc'), limit(50));
         const unsubAlbums = onSnapshot(qAlbums, (snapshot) => {
             const albums: any[] = [];
-            snapshot.forEach(doc => albums.push({ id: doc.id, ...doc.data() }));
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.createdAt >= EPOCH) albums.push({ id: doc.id, ...data });
+            });
             dispatch({ type: 'SYNC_ONLINE_ALBUMS', payload: albums });
         });
 
@@ -37,7 +48,10 @@ export const useOnlineSync = () => {
         const qArtists = query(collection(db, 'artists'), orderBy('createdAt', 'desc'), limit(100));
         const unsubArtists = onSnapshot(qArtists, (snapshot) => {
             const artists: any[] = [];
-            snapshot.forEach(doc => artists.push({ id: doc.id, ...doc.data() }));
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.createdAt >= EPOCH) artists.push({ id: doc.id, ...data });
+            });
             dispatch({ type: 'SYNC_ONLINE_ARTISTS', payload: artists });
         });
 

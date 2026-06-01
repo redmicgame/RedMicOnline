@@ -22,10 +22,10 @@ const GameUI: React.FC = () => {
     useEffect(() => {
         if (offlineMode) return;
 
-        // 1 hour = 1 week
-        const tickRate = 1000 * 60 * 60; // 1 hour in ms
-        const EPOCH = 1717200000000; 
-        const baseYear = new Date(EPOCH).getFullYear();
+        // 30 minutes = 1 week
+        const tickRate = 1000 * 60 * 30; // 30 minutes in ms
+        const EPOCH = 1780344837000; 
+        const baseYear = 2000;
 
         const checkTime = () => {
             const now = Date.now();
@@ -44,9 +44,9 @@ const GameUI: React.FC = () => {
     // Separate effect for progressing week to avoid infinite loops
     useEffect(() => {
         if (offlineMode) return;
-        const tickRate = 1000 * 60 * 60; // 1 hour in ms
-        const EPOCH = 1717200000000;
-        const baseYear = new Date(EPOCH).getFullYear();
+        const tickRate = 1000 * 60 * 30; // 30 minutes in ms
+        const EPOCH = 1780344837000;
+        const baseYear = 2000;
 
         const checkProgress = () => {
             const now = Date.now();
@@ -61,7 +61,7 @@ const GameUI: React.FC = () => {
         };
 
         checkProgress();
-        const interval = setInterval(checkProgress, 5000); // Check every 5s for progress
+        const interval = setInterval(checkProgress, 5000); // Check every 5 seconds
         return () => clearInterval(interval);
     }, [offlineMode, gameState.date.week, gameState.date.year, dispatch]);
 
