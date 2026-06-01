@@ -1,0 +1,107 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A registered player in the game.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "activeArtistId": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Artist": {
+      "title": "Artist",
+      "description": "An artist managed by a real player.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "genre": { "type": "string" },
+        "funds": { "type": "number" },
+        "popularity": { "type": "number" },
+        "energy": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["ownerId", "name", "genre", "funds", "popularity", "energy", "createdAt", "updatedAt"]
+    },
+    "GlobalState": {
+      "title": "Global State",
+      "description": "Server-wide variables like time.",
+      "type": "object",
+      "properties": {
+        "serverStartTime": { "type": "number" },
+        "startYear": { "type": "number" }
+      },
+      "required": ["serverStartTime", "startYear"]
+    },
+    "Song": {
+      "title": "Song",
+      "description": "An online song.",
+      "type": "object",
+      "properties": {
+        "artistId": { "type": "string" },
+        "artistName": { "type": "string" },
+        "title": { "type": "string" },
+        "streams": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["artistId", "artistName", "title", "streams", "createdAt"]
+    },
+    "Album": {
+      "title": "Album",
+      "description": "An online album.",
+      "type": "object",
+      "properties": {
+        "artistId": { "type": "string" },
+        "artistName": { "type": "string" },
+        "title": { "type": "string" },
+        "sales": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["artistId", "artistName", "title", "sales", "createdAt"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A social media post on X.",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "content": { "type": "string" },
+        "likes": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["authorId", "authorName", "content", "likes", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Player accounts."
+    },
+    "/artists/{artistId}": {
+      "schema": { "$ref": "#/entities/Artist" },
+      "description": "Artists controlled by real players."
+    },
+    "/songs/{songId}": {
+      "schema": { "$ref": "#/entities/Song" },
+      "description": "Songs released online."
+    },
+    "/albums/{albumId}": {
+      "schema": { "$ref": "#/entities/Album" },
+      "description": "Albums released online."
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Posts created by players."
+    },
+    "/global/{docId}": {
+      "schema": { "$ref": "#/entities/GlobalState" },
+      "description": "Global config (e.g. state doc)."
+    }
+  }
+}

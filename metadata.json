@@ -1,0 +1,7 @@
+{
+  "name": "Red Mic: Online",
+  "description": "An advanced music artist simulation game where you manage your artist\u0027s career, record hits, climb the charts, and become a superstar. Start with $100K and make your way to the top.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

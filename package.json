@@ -1,0 +1,33 @@
+{
+  "name": "red-mic:-enhanced-edition",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "start": "node dist/server.cjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@google/genai": "latest",
+    "cors": "^2.8.6",
+    "dexie": "^4.0.8",
+    "dexie-react-hooks": "^1.1.7",
+    "express": "^5.2.1",
+    "firebase": "^12.12.1",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@firebase/eslint-plugin-security-rules": "^0.0.2",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "esbuild": "^0.28.0",
+    "tsx": "^4.22.3",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}

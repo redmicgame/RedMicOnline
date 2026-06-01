@@ -1,0 +1,96 @@
+import { useEffect, useRef } from 'react';
+import { useGame } from '../context/GameContext';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+
+export const useOnlinePush = () => {
+    const { gameState } = useGame();
+    const lastPushedWeekRef = useRef<{ week: number, year: number } | null>(null);
+
+    useEffect(() => {
+        if (gameState.offlineMode || !gameState.activeArtistId) return;
+
+        const currentWeek = gameState.date.week;
+        const currentYear = gameState.date.year;
+        
+        // Push only once per game week
+        if (
+            lastPushedWeekRef.current && 
+            lastPushedWeekRef.current.week === currentWeek && 
+            lastPushedWeekRef.current.year === currentYear
+        ) {
+            return;
+        }
+
+        const pushData = async () => {
+            try {
+                // Determine active artist data
+                const artistData = gameState.artistsData[gameState.activeArtistId];
+                if (!artistData) return;
+                
+                const artistProfile = gameState.soloArtist?.id === gameState.activeArtistId 
+                    ? gameState.soloArtist 
+                    : gameState.group?.id === gameState.activeArtistId ? gameState.group : null;
+                
+                if (!artistProfile) return;
+
+                // Push artist entity
+                await setDoc(doc(db, 'artists', artistProfile.id), {
+                    id: artistProfile.id,
+                    name: artistProfile.name,
+                    age: 'age' in artistProfile ? artistProfile.age : 20,
+                    fandomName: artistProfile.fandomName,
+                    avatar: artistProfile.image || null,
+                    publicImage: artistData.publicImage || 50,
+                    popularity: artistData.popularity || 0,
+                    monthlyListeners: artistData.monthlyListeners || 0,
+                    money: artistData.money || 0,
+                    createdAt: Date.now(), // keeps sorting static if needed, or update it
+                    updatedAt: Date.now()
+                }, { merge: true });
+
+                // Push released songs
+                for (const song of artistData.songs) {
+                    if (song.isReleased && !song.remixOfSongId) {
+                        await setDoc(doc(db, 'songs', song.id), {
+                            id: song.id,
+                            artistId: artistProfile.id,
+                            artistName: artistProfile.name,
+                            title: song.title,
+                            genre: song.genre,
+                            coverArt: song.coverArt || null,
+                            lastWeekStreams: song.lastWeekStreams || 0,
+                            streams: song.streams || 0,
+                            isReleased: true,
+                            itunesPrice: song.itunesPrice || 0.99,
+                            updatedAt: Date.now()
+                        }, { merge: true });
+                    }
+                }
+
+                // Push released albums
+                for (const release of artistData.releases) {
+                    if ((release.type === 'Album' || release.type === 'EP') && release.isReleased) {
+                        await setDoc(doc(db, 'albums', release.id), {
+                            id: release.id,
+                            artistId: artistProfile.id,
+                            artistName: artistProfile.name,
+                            title: release.title,
+                            coverArt: release.coverArt || null,
+                            weeklySales: release.sales || 0,
+                            releasingLabel: release.releasingLabel ? { name: release.releasingLabel.name } : null,
+                            updatedAt: Date.now()
+                        }, { merge: true });
+                    }
+                }
+
+                lastPushedWeekRef.current = { week: currentWeek, year: currentYear };
+            } catch (err) {
+                console.error("Failed to push online data: ", err);
+            }
+        };
+
+        pushData();
+        
+    }, [gameState.date, gameState.offlineMode, gameState.activeArtistId]);
+};
