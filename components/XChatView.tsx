@@ -55,7 +55,21 @@ const XChatView: React.FC = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [chat?.messages]);
     
-    const findUser = (id: string) => xUsers.find(u => u.id === id);
+    const findUser = (id: string) => {
+        if (!gameState.offlineMode && id.startsWith('artist_') && gameState.onlineArtists) {
+            const onlineAuthor = gameState.onlineArtists.find(a => a.id === id);
+            if (onlineAuthor) {
+                return {
+                    id: onlineAuthor.id,
+                    name: onlineAuthor.name,
+                    username: onlineAuthor.name.replace(/\s+/g, '').toLowerCase(),
+                    avatar: onlineAuthor.avatar || 'https://ui-avatars.com/api/?background=random',
+                    isVerified: true
+                } as XUser;
+            }
+        }
+        return xUsers.find(u => u.id === id);
+    };
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -71,6 +85,18 @@ const XChatView: React.FC = () => {
         const currentMessageText = messageText;
         dispatch({ type: 'SEND_X_MESSAGE', payload: { chatId: chat.id, message: playerMessage }});
         setMessageText('');
+
+        // If it's a firebase chat (chatId contains '_'), we send to firebase and return
+        if (chat.id.includes('_') && !chat.isGroup) {
+            const receiverId = chat.participants.find(p => p !== playerUser.id);
+            if (receiverId) {
+                 import('../firebase').then(({ sendDirectMessage }) => {
+                     sendDirectMessage(playerUser.id, receiverId, currentMessageText, playerMessage.id);
+                 }).catch(console.error);
+                 return;
+            }
+        }
+
         setIsAiReplying(true);
     
         try {
@@ -94,8 +120,8 @@ const XChatView: React.FC = () => {
                 .join('\n');
     
             const persona = chat.isGroup 
-                ? `You are a die-hard fan of the music artist ${activeArtist?.name}. Your username is ${replier.name}. You are in an exclusive group chat with the artist and other fans. Be enthusiastic, supportive, and use casual, lowercase internet slang.`
-                : `You are a die-hard fan of the music artist ${activeArtist?.name}. Your username is ${replier.name}. You are direct messaging them. Be respectful but very excited. Use casual, lowercase internet slang.`;
+                ? `You are a music artist. Your username is ${replier.name}. You are in a group chat with the artist ${activeArtist?.name} and other artists/people. Be collegial, casual, and talk about the industry or life. Use casual, internet slang.`
+                : `You are a music artist. Your username is ${replier.name}. You are direct messaging another artist, ${activeArtist?.name}. Be realistic to how artists talk to each other (collaborations, hangouts, praising work). Use casual internet slang.`;
     
             let aiReplyText = '';
             if (gameState.offlineMode || !activeArtistData?.redMicPro?.unlocked) {

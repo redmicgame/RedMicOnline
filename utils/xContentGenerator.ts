@@ -1071,119 +1071,75 @@ export const generateWeeklyXContent = (
         }
     }
 
-    // --- X CHAT LOGIC ---
-    const popularityFactor = Math.min(100, popularity) / 100; // 0 to 1
-    
-    // Group Chats Logic
-    const existingGroupChats = xChats.filter(c => c.isGroup);
-    
-    // Chance to create a new group chat scales with popularity (max ~15% per week)
-    if (existingGroupChats.length < 15 && Math.random() < (0.05 + popularityFactor * 0.1)) {
-        const gcNames = [`${artistName} Updates`, `${artistName.toUpperCase()} HQ`, `${artistName} daily`, `${artistName} stan group`];
-        const newGcName = pickRandom(gcNames);
-        const gcAvatar = artistImages.length > 0 ? pickRandom(artistImages) : undefined;
+    // --- ARTIST DM LOGIC ---
+    // Sometimes another artist (NPC or Online) will DM the player
+    // Max 10% chance per week
+    const popularityFactor = Math.min(100, popularity) / 100;
+    if (Math.random() < (0.02 + popularityFactor * 0.08)) {
+        // Collect potential artists
+        const potentialArtists: { id: string, name: string, avatar: string }[] = [];
         
-        // Randomly pick 2-5 fans
-        const allFans = artistData.xUsers.filter(u => u.id.startsWith('fan'));
-        const participants = ['player'];
-        for (let i = 0; i < Math.floor(Math.random() * 4) + 2; i++) {
-            if (allFans[i]) participants.push(allFans[i].id);
-        }
-        
-        newChats.push({
-            id: crypto.randomUUID(),
-            name: newGcName,
-            avatar: gcAvatar || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIzMiIgZmlsbD0iI2QzMjYyNiIvPjwvc3ZnPg==',
-            isGroup: true,
-            participants,
-            messages: [{
-                id: crypto.randomUUID(), senderId: participants[1] || 'fan1',
-                text: `Just made this GC! Omg let's hope ${artistName} sees this!`, date
-            }],
-            isRead: false
+        gameState.npcs.forEach(npc => {
+            potentialArtists.push({
+                id: npc.id,
+                name: npc.name,
+                avatar: npc.image || 'https://ui-avatars.com/api/?background=random&name=' + encodeURIComponent(npc.name),
+            });
         });
-    }
 
-    // Add messages to existing group chats (scales with popularity)
-    existingGroupChats.forEach(gc => {
-        if (Math.random() < (0.2 + popularityFactor * 0.6)) {
-            const senderId = pickRandom(gc.participants.filter(p => p !== 'player')) || 'fan1';
-            const gcMessages = [
-                `did you guys see ${artistName}'s latest post??`,
-                `we need tour dates like RIGHT NOW`,
-                `obsessed with the new aesthetic`,
-                `what do we think the next single is gonna be?`,
-                `crying throwing up over ${artistName}`,
-                `${artistName} is literally mother/father`,
-                `stream the new era 🗣️🗣️`,
-                `i can't stop listening to ${artistName} omg`,
-                `${artistName} if you see this we love you!!`,
-                `so glad to be part of the fandom rn`,
-                `everyone is talking about ${artistName} today!`,
+        const dmArtist = pickRandom(potentialArtists);
+        if (dmArtist) {
+            // Check if DM chat already exists
+            const existingChat = xChats.find(c => !c.isGroup && c.participants.includes(dmArtist.id));
+            
+            const messages = [
+                `yo! love the new stuff you're working on. we should link up soon`,
+                `hey! was just listening to your stuff, crazy good.`,
+                `hope you're doing good. let's get in the studio soon.`,
+                `congrats on everything recently!`,
+                `hey! big fan of your recent work.`,
+                `what's up? let's collab sometime.`,
+                `keep killing it!`,
             ];
-            // Offline mode / random message loop handles "more messages"
-            const numMessages = Math.floor(Math.random() * 3) + 1; // 1 to 3 messages
-            for (let m = 0; m < numMessages; m++) {
-                newMessages.push({
-                    chatId: gc.id,
-                    message: {
-                        id: crypto.randomUUID(),
-                        senderId,
-                        text: pickRandom(gcMessages),
-                        date
-                    }
+
+            const msgObj: {
+                id: string;
+                senderId: string;
+                text: string;
+                date: { year: number; week: number; };
+            } = { id: crypto.randomUUID(), senderId: dmArtist.id, text: pickRandom(messages), date };
+
+            // Add the sender to xUsers if they don't exist
+            if (!artistData.xUsers.find(u => u.id === dmArtist.id) && !newUsers.find(u => u.id === dmArtist.id)) {
+                newUsers.push({
+                    id: dmArtist.id,
+                    name: dmArtist.name,
+                    username: dmArtist.name.replace(/\s+/g, '').toLowerCase(),
+                    avatar: dmArtist.avatar,
+                    isVerified: true,
+                    followersCount: Math.floor(Math.random() * 2000000) + 100000,
+                    followingCount: Math.floor(Math.random() * 500) + 50,
+                    bio: 'Music Artist'
+                });
+            }
+
+            if (existingChat) {
+                newMessages.push({ chatId: existingChat.id, message: msgObj });
+            } else {
+                newChats.push({
+                    id: crypto.randomUUID(),
+                    name: dmArtist.name,
+                    avatar: dmArtist.avatar,
+                    isGroup: false,
+                    participants: ['player', dmArtist.id],
+                    messages: [msgObj],
+                    isRead: false
                 });
             }
         }
-    });
-
-    // Individual DMs Logic
-    // Chance to get a random fan DM scales with popularity (max ~40% per week)
-    if (Math.random() < (0.1 + popularityFactor * 0.3)) {
-        const allFans = artistData.xUsers.filter(u => u.id.startsWith('fan'));
-        const dmFan = pickRandom(allFans);
-        if (dmFan) {
-            // Check if DM chat already exists
-            let dmChat = xChats.find(c => !c.isGroup && c.participants.includes(dmFan.id));
-            if (!dmChat) {
-                // check newChats
-                dmChat = newChats.find(c => !c.isGroup && c.participants.includes(dmFan.id));
-            }
-            
-            const messages = [
-                `omg i love you so much!! ${artistName} please reply 😭`,
-                `you literally saved my life with your music`,
-                `are we getting a tour soon? love from brazil 🇧🇷`,
-                `please unblock me from your spam account`,
-                `bestie drop the skincare routine immediately`,
-                `your last song was incredible. keeping it on repeat!`,
-                `hi ${pronouns === 'he/him' ? 'king' : pronouns === 'she/her' ? 'queen' : 'icon'} just wanted to say i'm your biggest fan!!`,
-                `is there a deluxe album coming??`,
-                `so proud of you ${artistName}!!`,
-                `hope you receive this... thank you for everything!`
-            ];
-            
-            const numMessages = Math.floor(Math.random() * 2) + 1; // 1 to 2 messages
-            for (let m = 0; m < numMessages; m++) {
-                const msgObj: XMessage = { id: crypto.randomUUID(), senderId: dmFan.id, text: pickRandom(messages), date };
-                
-                if (dmChat) {
-                    newMessages.push({ chatId: dmChat.id, message: msgObj });
-                } else {
-                    dmChat = {
-                        id: crypto.randomUUID(),
-                        name: dmFan.name,
-                        avatar: dmFan.avatar,
-                        isGroup: false,
-                        participants: ['player', dmFan.id],
-                        messages: [msgObj],
-                        isRead: false
-                    };
-                    newChats.push(dmChat);
-                }
-            }
-        }
     }
+
+    // Calculate hype based on trends and viral posts
 
     return { newPosts, newUsers, newTrends, newChats, newMessages };
 };

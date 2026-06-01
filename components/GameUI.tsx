@@ -24,7 +24,7 @@ const GameUI: React.FC = () => {
 
         // 30 minutes = 1 week
         const tickRate = 1000 * 60 * 30; // 30 minutes in ms
-        const EPOCH = 1780344837000; 
+        const EPOCH = 1780349068000; 
         const baseYear = 2000;
 
         const checkTime = () => {
@@ -45,7 +45,7 @@ const GameUI: React.FC = () => {
     useEffect(() => {
         if (offlineMode) return;
         const tickRate = 1000 * 60 * 30; // 30 minutes in ms
-        const EPOCH = 1780344837000;
+        const EPOCH = 1780349068000;
         const baseYear = 2000;
 
         const checkProgress = () => {

@@ -424,15 +424,14 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
     };
 
     const findUser = (id: string) => {
-        if (!gameState.offlineMode && id.startsWith('artist_')) {
-            // Find in online artists if needed, but for now we look at onlinePosts directly
-            const onlineAuthor = gameState.onlinePosts?.find(p => p.authorId === id);
+        if (!gameState.offlineMode && id.startsWith('artist_') && gameState.onlineArtists) {
+            const onlineAuthor = gameState.onlineArtists.find(a => a.id === id);
             if (onlineAuthor) {
                 return {
-                    id: onlineAuthor.authorId,
-                    name: onlineAuthor.authorName,
-                    username: onlineAuthor.authorUsername || onlineAuthor.authorName.replace(/\s+/g, '').toLowerCase(),
-                    avatar: onlineAuthor.authorAvatar || 'https://ui-avatars.com/api/?background=random',
+                    id: onlineAuthor.id,
+                    name: onlineAuthor.name,
+                    username: onlineAuthor.name.replace(/\s+/g, '').toLowerCase(),
+                    avatar: onlineAuthor.avatar || 'https://ui-avatars.com/api/?background=random',
                     isVerified: true
                 } as XUser;
             }
@@ -441,37 +440,12 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
     };
 
     const sortedPosts = [...xPosts].sort((a, b) => {
-        const dateA = a.date.year * 52 + a.date.week;
-        const dateB = b.date.year * 52 + b.date.week;
-        return dateB - dateA;
+        const timeA = a.createdAt || (a.date.year * 52 + a.date.week);
+        const timeB = b.createdAt || (b.date.year * 52 + b.date.week);
+        return timeB - timeA;
     });
     
     let displayedPosts = sortedPosts;
-    
-    if (!gameState.offlineMode && gameState.onlinePosts) {
-        // Map online posts to XPost type
-        const mappedOnlinePosts: XPost[] = gameState.onlinePosts
-            .filter(p => !p.gameYear || p.gameYear <= gameState.date.year) // filter out broken future posts
-            .map(p => ({
-                id: p.id,
-                authorId: p.authorId,
-                content: p.content,
-                image: p.image,
-                likes: p.likes || 0,
-                retweets: 0,
-                views: (p.likes || 1) * 10,
-                comments: [],
-                date: { year: p.gameYear || gameState.date.year, week: p.gameWeek || gameState.date.week }
-            }));
-        
-        // Merge and sort
-        const mergedPosts = [...mappedOnlinePosts, ...sortedPosts];
-        displayedPosts = mergedPosts.sort((a, b) => {
-            const dateA = a.date.year * 52 + a.date.week;
-            const dateB = b.date.year * 52 + b.date.week;
-            return dateB - dateA;
-        });
-    }
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         // Kept for backward compatibility if ever needed
@@ -641,8 +615,11 @@ const MessagesView: React.FC = () => {
 
     return (
         <div className="text-white">
-            <div className="p-3 border-b border-zinc-700">
+            <div className="p-3 border-b border-zinc-700 flex justify-between items-center">
                 <h1 className="text-xl font-bold">Messages</h1>
+                <button onClick={() => dispatch({ type: 'CHANGE_VIEW', payload: 'xNewMessage' })} className="p-2 hover:bg-zinc-800 rounded-full">
+                    <EnvelopeIcon className="w-5 h-5 text-white" />
+                </button>
             </div>
              <div className="p-3">
                 <input type="text" placeholder="Search Direct Messages" className="w-full bg-zinc-800 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -1080,28 +1057,18 @@ const XView: React.FC = () => {
                         setQuotePostTarget(null);
                     }}
                     onPost={async (payload) => {
-                        dispatch({ type: 'POST_ON_X', payload });
+                        const newPostId = crypto.randomUUID();
+                        dispatch({ type: 'POST_ON_X', payload: { ...payload, id: newPostId } });
                         setIsComposeModalOpen(false);
                         setQuotePostTarget(null);
                         
-                        if (!gameState.offlineMode && playerUser) {
+                        // We are always in online mode now, but check if we're online
+                        if (gameState.activeArtistId && gameState.careerMode === 'online') {
                             try {
-                                const { collection, addDoc } = await import('firebase/firestore');
-                                const { db } = await import('../firebase');
-                                await addDoc(collection(db, 'posts'), {
-                                    authorId: playerUser.id,
-                                    authorName: playerUser.name,
-                                    authorUsername: playerUser.username,
-                                    authorAvatar: playerUser.avatar,
-                                    content: payload.content || '',
-                                    image: payload.image || null,
-                                    likes: 0,
-                                    gameYear: gameState.date.year,
-                                    gameWeek: gameState.date.week,
-                                    createdAt: Date.now()
-                                });
+                                const { publishXPost } = await import('../firebase');
+                                await publishXPost(gameState.activeArtistId, playerUser?.name || 'Unknown', payload.content || '', newPostId);
                             } catch (error) {
-                                console.error("Error creating online post", error);
+                                console.error('Failed to post to online server:', error);
                             }
                         }
                     }}

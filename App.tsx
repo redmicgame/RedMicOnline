@@ -26,6 +26,7 @@ import CreateGeniusInterviewView from './components/CreateGeniusInterviewView';
 import XView from './components/XView';
 import XProfileView from './components/XProfileView';
 import XChatView from './components/XChatView';
+import XNewMessageView from './components/XNewMessageView';
 import XCreateSpaceView from './components/XCreateSpaceView';
 import XActiveSpaceView from './components/XActiveSpaceView';
 import XAnalyticsView from './components/XAnalyticsView';
@@ -216,6 +217,8 @@ const AppContent: React.FC = () => {
                 return <XAnalyticsView />;
             case 'xChatDetail':
                 return <XChatView />;
+            case 'xNewMessage':
+                return <XNewMessageView />;
             case 'redMicProUnlock':
                 return <RedMicProUnlockView />;
             case 'redMicProDashboard':

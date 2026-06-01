@@ -38,5 +38,8 @@ service cloud.firestore {
     match /posts/{postId} {
       allow get, list, create, update, delete: if isSignedIn();
     }
+    match /messages/{messageId} {
+      allow get, list, create, update, delete: if isSignedIn();
+    }
   }
 }

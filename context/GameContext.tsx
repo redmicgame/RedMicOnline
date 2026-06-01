@@ -585,7 +585,8 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             const { onlineArtist } = action.payload;
             
             const tickRate = 1000 * 60 * 30; // 30 minutes
-            const EPOCH = 1780344837000;
+            // Global epoch set to reset the game server: 2026-06-01T21:24:28Z
+            const EPOCH = 1780349068000;
             const now = Date.now();
             const elapsedTime = Math.max(0, now - EPOCH);
             const globalWeekStamp = Math.floor(elapsedTime / tickRate) + 1;
@@ -634,8 +635,9 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 ...initialState,
                 offlineMode: false,
                 difficultyMode: 'normal',
-                careerMode: 'solo',
+                careerMode: 'online',
                 soloArtist: mappedArtist,
+                onlineArtist: mappedArtist,
                 activeArtistId: mappedArtist.id,
                 artistsData: {
                     [mappedArtist.id]: newArtistData
@@ -742,31 +744,6 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 id: crypto.randomUUID(), authorId: 'popbase', content: `Welcome to the industry, ${artist.name}! All eyes are on you.`,
                 likes: 1200, retweets: 350, views: 25000, date: startDate,
             }];
-
-            const fanGroupChat: XChat = {
-                id: 'gc1',
-                name: artist.fandomName,
-                avatar: fanUsers[0].avatar,
-                isGroup: true,
-                participants: [playerXUser.id, ...fanUsers.map(f => f.id)],
-                messages: [
-                    { id: crypto.randomUUID(), senderId: 'fan1', text: `OMG ${artist.pronouns === 'they/them' ? 'they are' : artist.pronouns === 'she/her' ? 'she is' : 'he is'} in the chat!!`, date: startDate },
-                    { id: crypto.randomUUID(), senderId: 'fan2', text: "hiiii we love you!!", date: startDate },
-                    { id: crypto.randomUUID(), senderId: 'fan3', text: "Welcome!!! So excited for new music!", date: startDate },
-                ],
-                isRead: true,
-            };
-             const dmWithFan: XChat = {
-                id: 'dm1',
-                name: fanUsers[0].name,
-                avatar: fanUsers[0].avatar,
-                isGroup: false,
-                participants: [playerXUser.id, 'fan1'],
-                messages: [
-                    { id: crypto.randomUUID(), senderId: 'fan1', text: `Just wanted to say I'm so excited for your career!!`, date: startDate }
-                ],
-                isRead: false,
-            };
             
             const newArtistData: ArtistData = {
                 ...initialArtistData,
@@ -779,7 +756,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 inbox: [welcomeEmail],
                 xUsers: initialXUsers,
                 xPosts: initialXPosts,
-                xChats: [fanGroupChat, dmWithFan],
+                xChats: [],
                 xTrends: [
                     { id: crypto.randomUUID(), category: 'Music · Trending', title: `${artist.name}`, postCount: 18400 },
                     { id: crypto.randomUUID(), category: 'Trending in United States', title: '#newartist', postCount: 98000 }
@@ -3553,8 +3530,8 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 coverArt: a.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.artistName || 'Unknown')}&background=random&color=fff&size=250`,
                 isPlayerAlbum: false,
                 albumId: a.id,
-                weeklyActivity: a.weeklyActivity || 0,
-                weeklySales: a.weeklySales || 0,
+                weeklyActivity: a.weeklyStreams || 0,
+                weeklySales: Math.floor((a.weeklyStreams || 0) / 1500),
             })) : [];
             
             // Remove any online albums that are actually the player's local albums to prevent duplicates
@@ -6124,7 +6101,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             }
 
             const newPost: XPost = {
-                id: crypto.randomUUID(),
+                id: action.payload.id || crypto.randomUUID(),
                 authorId: playerUser.id,
                 content: postContent,
                 image: image,
@@ -6506,6 +6483,36 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 }
             };
         }
+        case 'ADD_X_USER': {
+            if (!state.activeArtistId) return state;
+            const activeData = state.artistsData[state.activeArtistId];
+            return {
+                ...state,
+                 artistsData: {
+                    ...state.artistsData,
+                    [state.activeArtistId]: {
+                        ...activeData,
+                        xUsers: [...activeData.xUsers, action.payload]
+                    }
+                }
+            };
+        }
+        case 'CREATE_X_CHAT': {
+            if (!state.activeArtistId) return state;
+            const activeData = state.artistsData[state.activeArtistId];
+            return {
+                ...state,
+                 artistsData: {
+                    ...state.artistsData,
+                    [state.activeArtistId]: {
+                        ...activeData,
+                        xChats: [...activeData.xChats, action.payload],
+                    }
+                },
+                currentView: 'xChatDetail',
+                selectedXChatId: action.payload.id
+            };
+        }
         case 'SEND_X_MESSAGE': {
              if (!state.activeArtistId) return state;
             const { chatId, message } = action.payload;
@@ -6773,6 +6780,100 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
         }
         case 'RESET_GAME':
             return initialState;
+        case 'SET_ONLINE_ARTISTS': {
+            return {
+                ...state,
+                onlineArtists: action.payload
+            };
+        }
+        case 'SYNC_ONLINE_POSTS': {
+             if (!state.activeArtistId) return state;
+             const activeData = state.artistsData[state.activeArtistId];
+             // Parse posts from firebase:
+             // action.payload = [{id, authorId, authorName, content, createdAt}, ...]
+             const syncedPosts: XPost[] = action.payload.map(p => ({
+                 id: p.id,
+                 authorId: p.authorId,
+                 authorName: p.authorName, // Custom field just for viewing
+                 content: p.content,
+                 likes: Math.floor(Math.random() * 100),
+                 retweets: Math.floor(Math.random() * 20),
+                 views: Math.floor(Math.random() * 1000),
+                 date: state.date, // maybe real timestamp is better
+                 createdAt: p.createdAt,
+             }));
+
+             // merge with existing, replacing any with same id, avoid duplicates
+             const existingPosts = activeData.xPosts.filter(ep => !syncedPosts.find(sp => sp.id === ep.id));
+
+             return {
+                 ...state,
+                 artistsData: {
+                     ...state.artistsData,
+                     [state.activeArtistId]: {
+                         ...activeData,
+                         xPosts: [...syncedPosts, ...existingPosts].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0))
+                     }
+                 }
+             };
+        }
+        case 'SYNC_ONLINE_MESSAGES': {
+            if (!state.activeArtistId) return state;
+            const activeData = state.artistsData[state.activeArtistId];
+            
+            // Build chats map from payload
+            const chatsMap = new Map<string, XChat>();
+
+            // pre-populate with existing non-firebase chats (NPCs)
+            activeData.xChats.forEach(c => {
+                if (!c.id.includes('_')) { // Assuming firebase chats have '_'
+                    chatsMap.set(c.id, c);
+                }
+            });
+            
+            action.payload.forEach(msg => {
+                 // chat ID is senderId_receiverId
+                 const chatId = msg.chatId;
+                 const otherId = msg.senderId === state.activeArtistId ? msg.receiverId : msg.senderId;
+                 const otherUser = Object.values(state.onlineArtists || {}).find((a: any) => a.id === otherId) as any;
+                 
+                 const messageOb: XMessage = {
+                     id: msg.id,
+                     senderId: msg.senderId,
+                     text: msg.text,
+                     date: state.date,
+                     createdAt: msg.createdAt
+                 };
+                 
+                 if (!chatsMap.has(chatId)) {
+                     chatsMap.set(chatId, {
+                         id: chatId,
+                         name: otherUser?.name || 'Unknown',
+                         avatar: 'https://ui-avatars.com/api/?background=random&name=' + encodeURIComponent(otherUser?.name || 'Unknown'),
+                         isGroup: false,
+                         participants: [state.activeArtistId, otherId],
+                         messages: [messageOb],
+                         isRead: true
+                     });
+                 } else {
+                     const chat = chatsMap.get(chatId)!;
+                     if (!chat.messages.find(m => m.id === messageOb.id)) {
+                         chat.messages.push(messageOb);
+                     }
+                 }
+            });
+            
+            return {
+                ...state,
+                artistsData: {
+                    ...state.artistsData,
+                    [state.activeArtistId]: {
+                        ...activeData,
+                        xChats: Array.from(chatsMap.values())
+                    }
+                }
+            };
+        }
         case 'LOAD_GAME': {
             const loadedPlaylists = action.payload.spotifyPlaylists || DEFAULT_SPOTIFY_PLAYLISTS;
             const mergedPlaylists = [...loadedPlaylists];
@@ -9436,8 +9537,89 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, [gameState, isLoading, isAuthLoading, user]);
 
+    useEffect(() => {
+        if (gameState.careerMode === 'online' && gameState.onlineArtist && user) {
+            const fetchOnlineInfo = async () => {
+                const { getAllOnlineArtists, listenToXPosts, listenToDirectMessages } = await import('../firebase');
+                const artists = await getAllOnlineArtists();
+                dispatch({ type: 'SET_ONLINE_ARTISTS', payload: artists });
+
+                const unsubPosts = listenToXPosts((posts) => {
+                    dispatch({ type: 'SYNC_ONLINE_POSTS', payload: posts });
+                });
+
+                const unsubMessages = listenToDirectMessages(gameState.onlineArtist!.id, (messages) => {
+                    dispatch({ type: 'SYNC_ONLINE_MESSAGES', payload: messages });
+                });
+
+                return () => {
+                    unsubPosts();
+                    unsubMessages();
+                };
+            };
+            const promise = fetchOnlineInfo();
+            return () => {
+                promise.then(cleanup => cleanup && cleanup());
+            };
+        }
+    }, [gameState.careerMode, gameState.onlineArtist, user]);
 
     const { activeArtistId, soloArtist, group, artistsData, careerMode } = gameState;
+
+    // Synchronize released songs/albums to Firebase for global online charts
+    useEffect(() => {
+        if (!isLoading && !isAuthLoading && gameState.careerMode === 'online' && user && gameState.activeArtistId) {
+            const syncMusicToCloud = async () => {
+                try {
+                    const activeData = gameState.artistsData[gameState.activeArtistId];
+                    if (!activeData) return;
+                    
+                    const { publishOnlineSong, publishOnlineAlbum, getOnlineSpotifySongsChart, getOnlineSpotifyAlbumsChart } = await import('../firebase');
+                    
+                    // Push all released songs with their current streams
+                    for (const song of activeData.songs) {
+                        if (song.isReleased) {
+                            await publishOnlineSong(
+                                gameState.activeArtistId, 
+                                gameState.soloArtist?.name || 'Unknown', 
+                                song.id, 
+                                song.title, 
+                                song.quality, 
+                                song.genre || 'Pop'
+                            );
+                            // Also update streams (assuming weekly streams is lastWeekStreams)
+                            const { updateOnlineSongStreams } = await import('../firebase');
+                            await updateOnlineSongStreams(song.id, song.streams || 0, song.lastWeekStreams || 0);
+                        }
+                    }
+
+                    // Push all released albums with their current streams
+                    for (const album of activeData.releases) {
+                        await publishOnlineAlbum(
+                            gameState.activeArtistId,
+                            gameState.soloArtist?.name || 'Unknown',
+                            album.id,
+                            album.title,
+                            album.type
+                        );
+                        const { updateOnlineAlbumStreams } = await import('../firebase');
+                        await updateOnlineAlbumStreams(album.id, album.streams || 0, album.lastWeekStreams || 0);
+                    }
+
+                    // Fetch global charts and inject into state
+                    const onlineSongs = await getOnlineSpotifySongsChart();
+                    dispatch({ type: 'SYNC_ONLINE_SONGS', payload: onlineSongs });
+                    const onlineAlbums = await getOnlineSpotifyAlbumsChart();
+                    dispatch({ type: 'SYNC_ONLINE_ALBUMS', payload: onlineAlbums });
+                } catch(err) {
+                    console.error("Failed to sync music to cloud", err);
+                }
+            };
+
+            const timeout = setTimeout(syncMusicToCloud, 5000); // 5 sec debounce
+            return () => clearTimeout(timeout);
+        }
+    }, [gameState.date.week, gameState.date.year, isLoading, isAuthLoading, user, gameState.careerMode]);
     const activeArtistData = activeArtistId ? artistsData[activeArtistId] : null;
 
     let activeArtist: Artist | Group | null = null;
