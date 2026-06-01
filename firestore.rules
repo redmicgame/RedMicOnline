@@ -13,46 +13,13 @@ service cloud.firestore {
     function existing() { return resource.data; }
     function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
 
-    function isValidUser(data) {
-      return data.keys().hasAll(['uid', 'email', 'createdAt'])
-        && data.uid is string && data.uid.size() <= 128 && data.uid == request.auth.uid
-        && data.email is string && data.email.size() <= 256
-        && data.createdAt is number
-        && (!('activeArtistId' in data.keys()) || (data.activeArtistId is string && data.activeArtistId.size() <= 128));
-    }
-
     match /users/{userId} {
       allow get: if isSignedIn() && request.auth.uid == userId;
-      allow create: if isSignedIn()
-        && request.auth.uid == userId
-        && isValidId(userId)
-        && isValidUser(incoming());
-        
-      allow update: if isSignedIn()
-        && request.auth.uid == userId
-        && isValidUser(incoming())
-        && incoming().uid == existing().uid
-        && incoming().createdAt == existing().createdAt
-        && incoming().diff(existing()).affectedKeys().hasOnly(['activeArtistId', 'email', 'updatedAt']);
+      allow create, update: if isSignedIn() && request.auth.uid == userId;
     }
 
     match /artists/{artistId} {
-      allow get, list: if isSignedIn();
-      
-      allow create: if isSignedIn()
-        && isValidId(artistId)
-        && isValidArtist(incoming());
-
-      allow update: if isSignedIn()
-        && existing().ownerId == request.auth.uid
-        && isValidArtist(incoming())
-        && incoming().ownerId == existing().ownerId
-        && incoming().createdAt == existing().createdAt
-        && (
-            (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'genre', 'updatedAt'])) ||
-            (incoming().diff(existing()).affectedKeys().hasOnly(['funds', 'popularity', 'energy', 'updatedAt'])) ||
-            (incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt']))
-        );
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     match /global/{docId} {
@@ -61,39 +28,15 @@ service cloud.firestore {
     }
 
     match /songs/{songId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn()
-        && isValidId(songId)
-        && isValidSong(incoming());
-      allow update: if isSignedIn()
-        && isValidSong(incoming())
-        && incoming().artistId == existing().artistId
-        && incoming().createdAt == existing().createdAt
-        && incoming().diff(existing()).affectedKeys().hasOnly(['streams']);
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     match /albums/{albumId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn()
-        && isValidId(albumId)
-        && isValidAlbum(incoming());
-      allow update: if isSignedIn()
-        && isValidAlbum(incoming())
-        && incoming().artistId == existing().artistId
-        && incoming().createdAt == existing().createdAt
-        && incoming().diff(existing()).affectedKeys().hasOnly(['sales']);
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     match /posts/{postId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn()
-        && isValidId(postId)
-        && isValidPost(incoming());
-      allow update: if isSignedIn()
-        && isValidPost(incoming())
-        && incoming().authorId == existing().authorId
-        && incoming().createdAt == existing().createdAt
-        && incoming().diff(existing()).affectedKeys().hasOnly(['likes']);
+      allow get, list, create, update, delete: if isSignedIn();
     }
   }
 }

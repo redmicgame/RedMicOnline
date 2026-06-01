@@ -584,14 +584,14 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
         case 'START_ONLINE_GAME': {
             const { onlineArtist } = action.payload;
             
-            const tickRate = 1000 * 60 * 60; // 1 hour
-            const EPOCH = 1717200000000;
+            const tickRate = 1000 * 60 * 30; // 30 minutes
+            const EPOCH = 1780344837000;
             const now = Date.now();
             const elapsedTime = Math.max(0, now - EPOCH);
             const globalWeekStamp = Math.floor(elapsedTime / tickRate) + 1;
             
             // Re-calculate year and week
-            let year = new Date(EPOCH).getFullYear();
+            let year = 2000;
             let week = globalWeekStamp;
             while (week > 52) {
                 week -= 52;
