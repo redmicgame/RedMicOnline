@@ -93,6 +93,28 @@ const YouTubeHome: React.FC = () => {
     
     const filteredVideos = useMemo(() => {
         const allVideos = Object.values(artistsData).flatMap(data => data.videos);
+        
+        // Include online videos if available
+        if (!gameState.offlineMode && gameState.onlineSongs) {
+            gameState.onlineSongs.forEach((song: any) => {
+                if (song.isReleased && song.gameYear && song.gameWeek && song.gameYear <= gameState.date.year) {
+                    if (song.gameYear === gameState.date.year && song.gameWeek > gameState.date.week) return;
+                    
+                    // Synthesize a generic music video for online songs
+                    allVideos.push({
+                        id: `online_mv_${song.id}`,
+                        title: `${song.artistName} - ${song.title} (Official Music Video)`,
+                        type: 'Music Video',
+                        views: (song.streams || 0) * 0.2, // roughly 20% of streams as views
+                        releaseDate: { week: song.gameWeek, year: song.gameYear },
+                        channelId: `online_channel_${song.artistId}`,
+                        songId: song.id,
+                        thumbnail: song.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.artistName || 'Unknown')}&background=random&color=fff&size=250`
+                    });
+                }
+            });
+        }
+        
         const sortedByDate = [...allVideos].sort((a, b) => (b.releaseDate.year * 52 + b.releaseDate.week) - (a.releaseDate.year * 52 + a.releaseDate.week));
 
         if (activeFilter === 'All') {

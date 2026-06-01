@@ -63,6 +63,8 @@ export const useOnlinePush = () => {
                             streams: song.streams || 0,
                             isReleased: true,
                             itunesPrice: song.itunesPrice || 0.99,
+                            gameYear: currentYear,
+                            gameWeek: currentWeek,
                             updatedAt: Date.now()
                         }, { merge: true });
                     }
@@ -79,6 +81,8 @@ export const useOnlinePush = () => {
                             coverArt: release.coverArt || null,
                             weeklySales: release.sales || 0,
                             releasingLabel: release.releasingLabel ? { name: release.releasingLabel.name } : null,
+                            gameYear: currentYear,
+                            gameWeek: currentWeek,
                             updatedAt: Date.now()
                         }, { merge: true });
                     }

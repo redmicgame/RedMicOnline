@@ -450,20 +450,27 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
     
     if (!gameState.offlineMode && gameState.onlinePosts) {
         // Map online posts to XPost type
-        const mappedOnlinePosts: XPost[] = gameState.onlinePosts.map(p => ({
-            id: p.id,
-            authorId: p.authorId,
-            content: p.content,
-            image: p.image,
-            likes: p.likes || 0,
-            retweets: 0,
-            views: (p.likes || 1) * 10,
-            comments: [],
-            date: gameState.date // Roughly assign the current week for online posts
-        }));
+        const mappedOnlinePosts: XPost[] = gameState.onlinePosts
+            .filter(p => !p.gameYear || (p.gameYear === gameState.date.year && p.gameWeek === gameState.date.week))
+            .map(p => ({
+                id: p.id,
+                authorId: p.authorId,
+                content: p.content,
+                image: p.image,
+                likes: p.likes || 0,
+                retweets: 0,
+                views: (p.likes || 1) * 10,
+                comments: [],
+                date: { year: p.gameYear || gameState.date.year, week: p.gameWeek || gameState.date.week }
+            }));
         
-        // simple sort
-        displayedPosts = [...mappedOnlinePosts, ...sortedPosts];
+        // Merge and sort
+        const mergedPosts = [...mappedOnlinePosts, ...sortedPosts];
+        displayedPosts = mergedPosts.sort((a, b) => {
+            const dateA = a.date.year * 52 + a.date.week;
+            const dateB = b.date.year * 52 + b.date.week;
+            return dateB - dateA;
+        });
     }
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -1089,6 +1096,8 @@ const XView: React.FC = () => {
                                     content: payload.content || '',
                                     image: payload.image || null,
                                     likes: 0,
+                                    gameYear: gameState.date.year,
+                                    gameWeek: gameState.date.week,
                                     createdAt: Date.now()
                                 });
                             } catch (error) {

@@ -438,7 +438,7 @@ const initialState: GameState = {
     activeArtistId: null,
     artistsData: {},
     spotifyPlaylists: DEFAULT_SPOTIFY_PLAYLISTS,
-    date: { week: 1, year: 2024 },
+    date: { week: 1, year: 2000 },
     currentView: 'game',
     activeTab: 'Home',
     activeYoutubeChannel: 'artist',
@@ -3284,7 +3284,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             })) : [];
 
             // Add online songs
-            const onlineChartContenders = (!state.offlineMode && state.onlineSongs) ? state.onlineSongs.filter((s: any) => s.isReleased).map((s: any) => ({
+            const onlineChartContenders = (!state.offlineMode && state.onlineSongs) ? state.onlineSongs.filter((s: any) => s.isReleased && s.gameYear === newDate.year && s.gameWeek === newDate.week).map((s: any) => ({
                 uniqueId: s.id || crypto.randomUUID(), title: s.title, artist: s.artistName || 'Unknown Online Artist',
                 weeklyStreams: s.lastWeekStreams || 0,
                 isPlayerSong: false, // We treat them as non-player conceptually for UI highlighting unless it happens to be the player's own synced song via their ID

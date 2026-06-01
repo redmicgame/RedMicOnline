@@ -73,13 +73,20 @@ const StudioView: React.FC = () => {
     };
 
     const potentialCollaborators = useMemo(() => {
-        const npcs = NPC_ARTIST_NAMES.slice().sort();
-        const otherPlayerArtists = allPlayerArtists
-            .filter(a => a.id !== activeArtist.id)
-            .map(a => a.name)
-            .sort();
-        return [...otherPlayerArtists, ...npcs];
-    }, [allPlayerArtists, activeArtist]);
+        let options: string[] = [];
+        
+        if (!gameState.offlineMode && gameState.onlineArtists) {
+            options = gameState.onlineArtists.filter((oa: any) => oa.name !== activeArtist.name).map((oa: any) => oa.name).sort();
+        } else {
+            const npcs = NPC_ARTIST_NAMES.slice().sort();
+            const otherPlayerArtists = allPlayerArtists
+                .filter(a => a.id !== activeArtist.id)
+                .map(a => a.name)
+                .sort();
+            options = [...otherPlayerArtists, ...npcs];
+        }
+        return options;
+    }, [allPlayerArtists, activeArtist, gameState.offlineMode, gameState.onlineArtists]);
 
     const potentialProducers = useMemo(() => {
         return ["Metro Boomin", "Mike Dean", "Rick Rubin", "Pharrell Williams", "Max Martin", "Timbaland", "Benny Blanco", "Mustard", "London on da Track", "Murda Beatz", "Jack Antonoff", "Wheezy", "Boi-1da", "Tay Keith", "Southside", "Dr. Luke", "Kanye West", "Sean Combs", "Phil Spector"].sort();
