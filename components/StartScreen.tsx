@@ -25,6 +25,27 @@ const StartScreen: React.FC = () => {
 
     const [onlineProfile, setOnlineProfile] = useState<any>(null);
 
+    const handleWipeServer = async () => {
+        if (!window.confirm("ARE YOU SURE YOU WANT TO FORMAT THE SERVERS AND DELETE ALL DB DATA? THIS CANNOT BE UNDONE.")) return;
+        const pwd = window.prompt("Enter admin password to format servers:");
+        if (pwd !== "redmic-admin") {
+            alert("Incorrect password.");
+            return;
+        }
+        try {
+            const { ref, remove } = await import('firebase/database');
+            const { db } = await import('../firebase');
+            console.log("Wiping...");
+            const nodes = ['artists', 'songs', 'albums', 'x_posts', 'x_trends', 'news'];
+            for (const node of nodes) {
+                await remove(ref(db, node));
+            }
+            alert("Database Wiped!");
+        } catch(err) {
+            alert("Failed to wipe DB: " + String(err));
+        }
+    };
+
     useEffect(() => {
         if (user && mode === 'online') {
             const checkOnlineProfile = async () => {
@@ -185,6 +206,12 @@ const StartScreen: React.FC = () => {
                         ))}
 
                         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+                        
+                        {user && (
+                            <button type="button" onClick={handleWipeServer} className="w-full mt-4 h-12 bg-red-900/50 hover:bg-red-800 border-2 border-red-500 text-red-100 font-bold rounded-lg transition-colors text-lg tracking-wide uppercase">
+                                Format Servers (Admin)
+                            </button>
+                        )}
 
                         {user && (
                             <button type="submit" disabled={isLoading} className="w-full h-12 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors mt-2 shadow-lg shadow-blue-500/20 text-lg tracking-wide">
