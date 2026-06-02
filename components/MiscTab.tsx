@@ -366,6 +366,33 @@ const MiscTab: React.FC = () => {
 
                 <div className="bg-zinc-800 p-4 rounded-lg">
                     <h3 className="font-bold text-lg mb-2">Options</h3>
+                    
+                    {gameState.careerMode === 'online' && (
+                        <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-700">
+                            <div>
+                                <p className="font-bold">Feature Price</p>
+                                <p className="text-xs text-zinc-400">Set the price for other online players to feature you on their songs.</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-green-400">$</span>
+                                <input 
+                                    type="number" 
+                                    min="0"
+                                    value={activeArtistData.featurePrice || 50000}
+                                    onChange={async (e) => {
+                                        const price = parseInt(e.target.value) || 0;
+                                        dispatch({ type: 'UPDATE_FEATURE_PRICE', payload: { price } });
+                                        if (gameState.onlineArtist) {
+                                            const { updateOnlineArtistFeaturePrice } = await import('../firebase');
+                                            await updateOnlineArtistFeaturePrice(gameState.onlineArtist.id, price);
+                                        }
+                                    }}
+                                    className="w-24 bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-sm font-bold focus:outline-none focus:border-red-500"
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex items-center justify-between mb-4">
                         <div>
                             <p className="font-bold">Switch Save</p>

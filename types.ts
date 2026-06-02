@@ -73,6 +73,7 @@ export interface Song {
     contributorCutsTotal?: number;
     controversialContributors?: string[];
     aboutText?: string;
+    pendingFeatureApproval?: boolean;
     samples?: {
         songTitle: string;
         artistName: string;
@@ -138,6 +139,7 @@ export interface Video {
     description?: string;
     mentionedNpcs?: string[];
     isFeatureVideo?: boolean;
+    pendingFeatureApproval?: boolean;
 }
 
 export interface MerchProduct {
@@ -355,6 +357,18 @@ export interface CoachellaOffer {
     isSubmitted: boolean;
 }
 
+export interface OnlineFeatureOffer {
+    type: 'onlineFeatureOffer';
+    senderId: string;
+    senderName: string;
+    requestType: 'song' | 'music_video';
+    itemId: string; // The song id or video id on the sender's side
+    requestId: string;
+    title: string;
+    payout: number;
+    emailId: string;
+    isAccepted?: boolean;
+}
 
 export interface CheatingScandalEmail {
     type: 'cheatingScandal';
@@ -383,7 +397,7 @@ export interface Email {
     content?: string;
     date: GameDate;
     isRead: boolean;
-    offer?: GeniusOffer | FallonOffer | PopBaseOffer | GrammySubmissionOffer | GrammyNominationOffer | GrammyRedCarpetOffer | LeakNotification | XSuspensionEmail | XAppealResultEmail | OnlyFansOffer | SoundtrackOffer | TouringDataUpdate | VogueOffer | FeatureOffer | FeatureReleaseNotification | FeatureVideoOffer | OnTheRadarOffer | TrshdOffer | OscarsSubmissionOffer | OscarsNominationOffer | OscarRedCarpetOffer | CoachellaOffer | AmaSubmissionOffer | AmaNominationOffer | AmaRedCarpetOffer | CheatingScandalEmail | GiveBirthEmail | EventInvitationOffer | NpcContractRenewalOffer;
+    offer?: GeniusOffer | FallonOffer | PopBaseOffer | GrammySubmissionOffer | GrammyNominationOffer | GrammyRedCarpetOffer | LeakNotification | XSuspensionEmail | XAppealResultEmail | OnlyFansOffer | SoundtrackOffer | TouringDataUpdate | VogueOffer | FeatureOffer | FeatureReleaseNotification | FeatureVideoOffer | OnTheRadarOffer | TrshdOffer | OscarsSubmissionOffer | OscarsNominationOffer | OscarRedCarpetOffer | CoachellaOffer | AmaSubmissionOffer | AmaNominationOffer | AmaRedCarpetOffer | CheatingScandalEmail | GiveBirthEmail | EventInvitationOffer | NpcContractRenewalOffer | OnlineFeatureOffer;
 }
 
 export interface GameDate {
@@ -977,6 +991,7 @@ export interface ArtistData {
     paparazziPhotos: PaparazziPhoto[];
     tourPhotos: string[];
     tours: Tour[];
+    featurePrice?: number;
     pastRedCarpetLooks: RedCarpetLook[];
     streamsRemovedThisWeek?: number;
     manager: { id: string; contractEndDate: GameDate } | null;
@@ -1246,12 +1261,17 @@ export type GameAction =
     | { type: 'SET_ONLINE_ARTISTS'; payload: any[] }
     | { type: 'SYNC_ONLINE_POSTS'; payload: any[] }
     | { type: 'SYNC_ONLINE_MESSAGES'; payload: any[] }
+    | { type: 'SYNC_FEATURE_REQUESTS'; payload: any[] }
+    | { type: 'SYNC_FEATURE_APPROVALS'; payload: any[] }
+    | { type: 'ACCEPT_ONLINE_FEATURE'; payload: OnlineFeatureOffer }
+    | { type: 'DECLINE_ONLINE_FEATURE'; payload: OnlineFeatureOffer }
     | { type: 'UNLOCK_RED_MIC_PRO'; payload: { type: 'yearly' | 'lifetime' | 'code'; cost: number; } }
     | { type: 'UPDATE_SONG_QUALITY'; payload: { songId: string; newQuality: number; } }
     | { type: 'SET_MONEY'; payload: { newAmount: number; } }
     | { type: 'TOGGLE_GOLD_THEME'; payload: { enabled: boolean; } }
     | { type: 'SET_SALES_BOOST'; payload: { newBoost: number; } }
     | { type: 'UPDATE_ABOUT_SONG_TEXT'; payload: { songId: string; text: string; } }
+    | { type: 'UPDATE_FEATURE_PRICE'; payload: { price: number; } }
     | { type: 'UPDATE_WIKIPEDIA_SUMMARY'; payload: { releaseId: string; summary: string; } }
     | { type: 'TOGGLE_OFFLINE_MODE' }
     | { type: 'PRO_SIGN_LABEL'; payload: { labelId: Label['id']; } }

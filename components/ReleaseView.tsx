@@ -96,6 +96,13 @@ const ReleaseView: React.FC = () => {
         if (!title.trim()) {
             setError('Project title is required.'); return;
         }
+
+        const allNewSongs = Array.from(selectedSongIds).map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[];
+        const unapprovedSong = allNewSongs.find(s => s.pendingFeatureApproval);
+        if (unapprovedSong) {
+            setError(`Cannot release because '${unapprovedSong.title}' is pending feature approval from the featured online artist.`);
+            return;
+        }
         
         let finalReleaseType = releaseType;
         if (releaseType === 'Album (Deluxe)') {

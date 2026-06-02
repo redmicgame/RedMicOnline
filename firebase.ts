@@ -129,6 +129,17 @@ export const getArtistData = async (artistId: string) => {
     }
 }
 
+export const updateOnlineArtistFeaturePrice = async (artistId: string, price: number) => {
+    try {
+        await setDoc(doc(db, 'artists', artistId), {
+            featurePrice: price,
+            updatedAt: Date.now()
+        }, { merge: true });
+    } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `artists/${artistId}`);
+    }
+};
+
 export const getAllOnlineArtists = async () => {
     try {
         const q = query(collection(db, 'artists'), orderBy('createdAt', 'desc'), limit(100));
@@ -252,6 +263,58 @@ export const listenToDirectMessages = (userId: string, callback: (messages: any[
 };
 
 // Online Music Distribution & Charts
+export const sendFeatureRequest = async (senderId: string, senderName: string, receiverId: string, requestType: 'song' | 'music_video', title: string, cost: number, targetId: string) => {
+    try {
+        const requestsRef = collection(db, 'feature_requests');
+        await addDoc(requestsRef, {
+            senderId,
+            senderName,
+            receiverId,
+            requestType,
+            title,
+            cost,
+            targetId,
+            status: 'pending',
+            createdAt: Date.now()
+        });
+    } catch(err) {
+        handleFirestoreError(err, OperationType.CREATE, 'feature_requests');
+    }
+};
+
+export const listenToFeatureRequests = (userId: string, callback: (requests: any[]) => void) => {
+    const q = query(collection(db, 'feature_requests'), where('receiverId', '==', userId), where('status', '==', 'pending'));
+    return onSnapshot(q, (snapshot) => {
+        const requests: any[] = [];
+        snapshot.forEach((doc) => {
+            requests.push({ id: doc.id, ...doc.data() });
+        });
+        callback(requests);
+    });
+};
+
+export const listenToFeatureRequestApprovals = (userId: string, callback: (approvals: any[]) => void) => {
+    const q = query(collection(db, 'feature_requests'), where('senderId', '==', userId), where('status', '==', 'accepted'));
+    return onSnapshot(q, (snapshot) => {
+        const requests: any[] = [];
+        snapshot.forEach((doc) => {
+            requests.push({ id: doc.id, ...doc.data() });
+        });
+        callback(requests);
+    });
+};
+
+export const updateFeatureRequestStatus = async (requestId: string, status: 'accepted' | 'rejected') => {
+    try {
+        await setDoc(doc(db, 'feature_requests', requestId), {
+            status,
+            updatedAt: Date.now()
+        }, { merge: true });
+    } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `feature_requests/${requestId}`);
+    }
+};
+
 export const publishOnlineSong = async (artistId: string, artistName: string, songId: string, title: string, quality: number, genre: string) => {
     try {
         await setDoc(doc(db, 'online_songs', songId), {

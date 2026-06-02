@@ -125,6 +125,8 @@ const CreateVideoView: React.FC = () => {
             new RegExp(`\\b${name}\\b`, 'i').test(fullText)
         );
 
+        const isOnlineFeature = selectedSong.collaboration && gameState.onlineArtists?.some(oa => oa.name === selectedSong.collaboration!.artistName);
+
         const newVideo: Video = {
             id: crypto.randomUUID(),
             songId: selectedSong.id,
@@ -137,9 +139,20 @@ const CreateVideoView: React.FC = () => {
             channelId: channelId,
             description,
             mentionedNpcs,
+            pendingFeatureApproval: isOnlineFeature ? true : false,
         };
 
         dispatch({ type: 'CREATE_VIDEO', payload: { video: newVideo, cost } });
+        
+        if (isOnlineFeature && gameState.onlineArtist) {
+             const receiver = gameState.onlineArtists?.find(oa => oa.name === selectedSong.collaboration!.artistName);
+             if (receiver) {
+                 import('../firebase').then(({ sendFeatureRequest }) => {
+                     sendFeatureRequest(gameState.onlineArtist.id, gameState.onlineArtist.name, receiver.id, 'music_video', newVideo.title, 0, newVideo.id);
+                 });
+             }
+        }
+        
         dispatch({ type: 'CHANGE_VIEW', payload: 'youtube' });
     };
     

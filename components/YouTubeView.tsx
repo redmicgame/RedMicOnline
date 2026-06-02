@@ -92,7 +92,7 @@ const YouTubeHome: React.FC = () => {
     }, [careerMode, group]);
     
     const filteredVideos = useMemo(() => {
-        const allVideos = Object.values(artistsData).flatMap(data => data.videos);
+        const allVideos = Object.values(artistsData).flatMap(data => data.videos).filter(v => !v.pendingFeatureApproval);
         
         // Include online videos if available
         if (!gameState.offlineMode && gameState.onlineSongs) {
@@ -259,7 +259,7 @@ const YouTubeChannelView: React.FC = () => {
     
     const channelIdToShow = isViewingPastLabel ? viewingPastLabelId : (isLabelView && contract ? contract.labelId : activeArtistId!);
     const displayedVideos = useMemo(() => {
-         const filtered = videos.filter(v => v.channelId === channelIdToShow && !v.isFeatureVideo);
+         const filtered = videos.filter(v => v.channelId === channelIdToShow && !v.isFeatureVideo && !v.pendingFeatureApproval);
          switch (filter) {
             case 'Popular':
                 return filtered.sort((a, b) => b.views - a.views);

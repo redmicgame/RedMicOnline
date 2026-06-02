@@ -117,6 +117,13 @@ const StudioView: React.FC = () => {
             return 0; // Other playable characters (including kids) are free to feature
         }
         
+        if (gameState.onlineArtists) {
+            const onlineArtist = gameState.onlineArtists.find(oa => oa.name === artistName);
+            if (onlineArtist) {
+                return onlineArtist.featurePrice || 50000;
+            }
+        }
+        
         const genre = NPC_ARTIST_GENRES[artistName];
         if (genre === 'Indie') {
             return Math.floor(Math.random() * (25000 - 5000 + 1)) + 5000;
@@ -208,6 +215,8 @@ const StudioView: React.FC = () => {
                           engineers.reduce((sum) => sum + generateCut(), 0) +
                           anr.reduce((sum) => sum + generateCut(), 0);
 
+        const isOnlineFeature = collaboration && gameState.onlineArtists?.some(oa => oa.name === collaboration.artistName);
+
         const newSong: Song = {
             id: crypto.randomUUID(),
             title: songTitle,
@@ -232,9 +241,20 @@ const StudioView: React.FC = () => {
             samples,
             controversialContributors,
             contributorCutsTotal: totalCuts,
+            pendingFeatureApproval: isOnlineFeature ? true : false,
         };
 
         dispatch({ type: 'RECORD_SONG', payload: { song: newSong, cost: totalCost } });
+        
+        if (isOnlineFeature && gameState.onlineArtist) {
+            const receiver = gameState.onlineArtists?.find(oa => oa.name === collaboration!.artistName);
+            if (receiver) {
+                import('../firebase').then(({ sendFeatureRequest }) => {
+                    sendFeatureRequest(gameState.onlineArtist.id, gameState.onlineArtist.name, receiver.id, 'song', newSong.title, collaboration!.cost, newSong.id);
+                });
+            }
+        }
+        
         dispatch({ type: 'CHANGE_VIEW', payload: 'game' });
     };
 
@@ -386,9 +406,12 @@ const StudioView: React.FC = () => {
             const quality = (Math.floor(Math.random() * (max - min + 1)) + min) + qualityBoost;
             const finalQuality = Math.min(100, quality);
 
+            const isOnlineFeature = currentFeature && gameState.onlineArtists?.some(oa => oa.name === currentFeature.artistName);
+
+            const newSongId = crypto.randomUUID();
             newSongs.push({
                 ...targetSong,
-                id: crypto.randomUUID(),
+                id: newSongId,
                 title: `${targetSong.title} (${typeName})`,
                 quality: finalQuality,
                 isReleased: false,
@@ -407,7 +430,17 @@ const StudioView: React.FC = () => {
                 samples,
                 controversialContributors,
                 contributorCutsTotal: totalCuts,
+                pendingFeatureApproval: isOnlineFeature ? true : false,
             });
+
+            if (isOnlineFeature && gameState.onlineArtist) {
+                const receiver = gameState.onlineArtists?.find(oa => oa.name === currentFeature!.artistName);
+                if (receiver) {
+                    import('../firebase').then(({ sendFeatureRequest }) => {
+                        sendFeatureRequest(gameState.onlineArtist!.id, gameState.onlineArtist!.name, receiver.id, 'song', `${targetSong.title} (${typeName})`, currentFeature!.cost, newSongId);
+                    });
+                }
+            }
         });
 
         dispatch({ type: 'CREATE_REMIX_PACK', payload: { songs: newSongs, cost: packTotalCost } });

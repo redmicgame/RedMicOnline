@@ -247,6 +247,22 @@ const EmailDetailView: React.FC<{ email: Email; onBack: () => void }> = ({ email
             case 'coachellaOffer':
                 dispatch({ type: 'SUBMIT_COACHELLA', payload: { emailId: email.id } });
                 break;
+            case 'onlineFeatureOffer':
+                import('../firebase').then(({ updateFeatureRequestStatus }) => {
+                    updateFeatureRequestStatus(email.offer!.requestId, 'accepted');
+                });
+                dispatch({ type: 'ACCEPT_ONLINE_FEATURE', payload: email.offer as OnlineFeatureOffer });
+                break;
+        }
+    };
+
+    const handleDeclineOffer = () => {
+        if (!email.offer) return;
+        if (email.offer.type === 'onlineFeatureOffer') {
+            import('../firebase').then(({ updateFeatureRequestStatus }) => {
+                updateFeatureRequestStatus(email.offer!.requestId, 'rejected');
+            });
+            dispatch({ type: 'DECLINE_ONLINE_FEATURE', payload: email.offer as OnlineFeatureOffer });
         }
     };
     
@@ -458,6 +474,12 @@ const EmailDetailView: React.FC<{ email: Email; onBack: () => void }> = ({ email
                 acceptedText = "Feature Accepted";
                 isAccepted = email.offer.isAccepted;
                 break;
+            case 'onlineFeatureOffer':
+                buttonText = `Accept Request`;
+                buttonClass = "bg-green-600 hover:bg-green-700 text-white shadow-green-600/20";
+                acceptedText = "Request Accepted";
+                isAccepted = email.offer.isAccepted;
+                break;
             case 'featureVideoOffer':
                 buttonText = `Shoot Music Video`;
                 buttonClass = "bg-red-600 hover:bg-red-700 text-white shadow-red-600/20";
@@ -477,7 +499,12 @@ const EmailDetailView: React.FC<{ email: Email; onBack: () => void }> = ({ email
         return (
             <div className="mt-6 pt-4 border-t border-zinc-700">
                 {!isAccepted ? (
-                    <button onClick={handleAcceptOffer} className={`w-full h-12 font-bold py-2 px-4 rounded-lg transition-colors shadow-lg ${buttonClass}`}>{buttonText}</button>
+                    <div className="flex gap-2">
+                        <button onClick={handleAcceptOffer} className={`flex-grow h-12 font-bold py-2 px-4 rounded-lg transition-colors shadow-lg ${buttonClass}`}>{buttonText}</button>
+                        {email.offer?.type === 'onlineFeatureOffer' && (
+                             <button onClick={handleDeclineOffer} className="w-1/3 h-12 font-bold py-2 px-4 rounded-lg transition-colors shadow-lg bg-red-600 hover:bg-red-700 text-white shadow-red-600/20">Decline</button>
+                        )}
+                    </div>
                 ) : (
                     <div className="text-center font-semibold p-3 bg-zinc-700/50 rounded-lg">{acceptedText}</div>
                 )}

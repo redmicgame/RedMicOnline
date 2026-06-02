@@ -6874,6 +6874,158 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 }
             };
         }
+        case 'SYNC_FEATURE_REQUESTS': {
+            if (!state.activeArtistId) return state;
+            const activeData = state.artistsData[state.activeArtistId];
+            const requests = action.payload; // array of requests
+
+            let newEmails = [...activeData.emails];
+            let changed = false;
+
+            requests.forEach(req => {
+                const existing = newEmails.find(e => e.offer?.type === 'onlineFeatureOffer' && (e.offer as OnlineFeatureOffer).itemId === req.targetId);
+                if (!existing) {
+                    newEmails.push({
+                        id: crypto.randomUUID(),
+                        sender: req.senderName,
+                        subject: `Feature Request for ${req.title}`,
+                        body: `I'd like you to feature on my new ${req.requestType === 'song' ? 'track' : 'music video'} "${req.title}". My budget for this is $${req.cost.toLocaleString()}.`,
+                        date: { ...state.date },
+                        isRead: false,
+                        offer: {
+                            type: 'onlineFeatureOffer',
+                            senderId: req.senderId,
+                            senderName: req.senderName,
+                            requestType: req.requestType,
+                            itemId: req.targetId,
+                            requestId: req.id,
+                            title: req.title,
+                            payout: req.cost,
+                            emailId: '',
+                            isAccepted: false,
+                        }
+                    });
+                    changed = true;
+                }
+            });
+
+            if (!changed) return state;
+
+            return {
+                ...state,
+                artistsData: {
+                    ...state.artistsData,
+                    [state.activeArtistId]: {
+                        ...activeData,
+                        emails: newEmails
+                    }
+                }
+            };
+        }
+        case 'SYNC_FEATURE_APPROVALS': {
+            if (!state.activeArtistId) return state;
+            const activeData = state.artistsData[state.activeArtistId];
+            const approvals = action.payload; // array of accepted requests where we are sender
+
+            let newSongs = [...activeData.songs];
+            let newVideos = [...activeData.videos];
+            let newEmails = [...activeData.emails];
+            let changed = false;
+
+            approvals.forEach(req => {
+                if (req.requestType === 'song') {
+                    const song = newSongs.find(s => s.id === req.targetId);
+                    if (song && song.pendingFeatureApproval) {
+                        song.pendingFeatureApproval = false;
+                        changed = true;
+                        newEmails.push({
+                            id: crypto.randomUUID(),
+                            sender: req.receiverId, // would be nice to have name, but this is a system message 
+                            subject: `Feature Appoved: ${req.title}`,
+                            body: `Your feature request for "${req.title}" was accepted! You can now release it.`,
+                            date: { ...state.date },
+                            isRead: false,
+                        });
+                    }
+                } else if (req.requestType === 'music_video') {
+                    const video = newVideos.find(v => v.id === req.targetId);
+                    if (video && video.pendingFeatureApproval) {
+                        video.pendingFeatureApproval = false;
+                        changed = true;
+                        newEmails.push({
+                            id: crypto.randomUUID(),
+                            sender: req.receiverId,
+                            subject: `Video Feature Appoved: ${req.title}`,
+                            body: `Your video feature request for "${req.title}" was accepted! The video is now live.`,
+                            date: { ...state.date },
+                            isRead: false,
+                        });
+                    }
+                }
+            });
+
+            if (!changed) return state;
+
+            return {
+                ...state,
+                artistsData: {
+                    ...state.artistsData,
+                    [state.activeArtistId]: {
+                        ...activeData,
+                        songs: newSongs,
+                        videos: newVideos,
+                        emails: newEmails,
+                    }
+                }
+            };
+        }
+        case 'ACCEPT_ONLINE_FEATURE': {
+            if (!state.activeArtistId) return state;
+            const activeData = state.artistsData[state.activeArtistId];
+            const { requestId, payout } = action.payload as OnlineFeatureOffer;
+
+            let updatedEmails = activeData.emails.map(e => {
+                if (e.offer?.type === 'onlineFeatureOffer' && e.offer.requestId === requestId) {
+                    return { ...e, offer: { ...e.offer, isAccepted: true } };
+                }
+                return e;
+            });
+
+            return {
+                ...state,
+                artistsData: {
+                    ...state.artistsData,
+                    [state.activeArtistId]: {
+                        ...activeData,
+                        money: activeData.money + payout,
+                        emails: updatedEmails,
+                    }
+                }
+            };
+        }
+        case 'DECLINE_ONLINE_FEATURE': {
+            if (!state.activeArtistId) return state;
+            const activeData = state.artistsData[state.activeArtistId];
+            const { requestId } = action.payload as OnlineFeatureOffer;
+
+            let updatedEmails = activeData.emails.map(e => {
+                if (e.offer?.type === 'onlineFeatureOffer' && e.offer.requestId === requestId) {
+                    return { ...e, offer: { ...e.offer, isAccepted: true } }; // mark as processed
+                }
+                return e;
+            });
+
+            return {
+                ...state,
+                artistsData: {
+                    ...state.artistsData,
+                    [state.activeArtistId]: {
+                        ...activeData,
+                        emails: updatedEmails,
+                    }
+                }
+            };
+        }
         case 'LOAD_GAME': {
             const loadedPlaylists = action.payload.spotifyPlaylists || DEFAULT_SPOTIFY_PLAYLISTS;
             const mergedPlaylists = [...loadedPlaylists];
@@ -7072,6 +7224,20 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     [state.activeArtistId]: {
                         ...activeData,
                         releases: updatedReleases,
+                    }
+                }
+            };
+        }
+        case 'UPDATE_FEATURE_PRICE': {
+            if (!state.activeArtistId) return state;
+            const { price } = action.payload;
+            return {
+                ...state,
+                artistsData: {
+                    ...state.artistsData,
+                    [state.activeArtistId]: {
+                        ...state.artistsData[state.activeArtistId],
+                        featurePrice: price
                     }
                 }
             };
@@ -9540,7 +9706,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         if (gameState.careerMode === 'online' && gameState.onlineArtist && user) {
             const fetchOnlineInfo = async () => {
-                const { getAllOnlineArtists, listenToXPosts, listenToDirectMessages } = await import('../firebase');
+                const { getAllOnlineArtists, listenToXPosts, listenToDirectMessages, listenToFeatureRequests, listenToFeatureRequestApprovals } = await import('../firebase');
                 const artists = await getAllOnlineArtists();
                 dispatch({ type: 'SET_ONLINE_ARTISTS', payload: artists });
 
@@ -9552,9 +9718,19 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     dispatch({ type: 'SYNC_ONLINE_MESSAGES', payload: messages });
                 });
 
+                const unsubRequests = listenToFeatureRequests(gameState.onlineArtist!.id, (requests) => {
+                    dispatch({ type: 'SYNC_FEATURE_REQUESTS', payload: requests });
+                });
+
+                const unsubApprovals = listenToFeatureRequestApprovals(gameState.onlineArtist!.id, (approvals) => {
+                    dispatch({ type: 'SYNC_FEATURE_APPROVALS', payload: approvals });
+                });
+
                 return () => {
                     unsubPosts();
                     unsubMessages();
+                    unsubRequests();
+                    unsubApprovals();
                 };
             };
             const promise = fetchOnlineInfo();
