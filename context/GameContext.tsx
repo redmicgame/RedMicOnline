@@ -6879,7 +6879,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             const activeData = state.artistsData[state.activeArtistId];
             const requests = action.payload; // array of requests
 
-            let newEmails = [...activeData.emails];
+            let newEmails = [...activeData.inbox];
             let changed = false;
 
             requests.forEach(req => {
@@ -6917,7 +6917,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     ...state.artistsData,
                     [state.activeArtistId]: {
                         ...activeData,
-                        emails: newEmails
+                        inbox: newEmails
                     }
                 }
             };
@@ -6929,7 +6929,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
 
             let newSongs = [...activeData.songs];
             let newVideos = [...activeData.videos];
-            let newEmails = [...activeData.emails];
+            let newEmails = [...activeData.inbox];
             let changed = false;
 
             approvals.forEach(req => {
@@ -6974,7 +6974,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                         ...activeData,
                         songs: newSongs,
                         videos: newVideos,
-                        emails: newEmails,
+                        inbox: newEmails,
                     }
                 }
             };
@@ -6984,7 +6984,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             const activeData = state.artistsData[state.activeArtistId];
             const { requestId, payout } = action.payload as OnlineFeatureOffer;
 
-            let updatedEmails = activeData.emails.map(e => {
+            let updatedEmails = activeData.inbox.map(e => {
                 if (e.offer?.type === 'onlineFeatureOffer' && e.offer.requestId === requestId) {
                     return { ...e, offer: { ...e.offer, isAccepted: true } };
                 }
@@ -6998,7 +6998,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     [state.activeArtistId]: {
                         ...activeData,
                         money: activeData.money + payout,
-                        emails: updatedEmails,
+                        inbox: updatedEmails,
                     }
                 }
             };
@@ -7008,7 +7008,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             const activeData = state.artistsData[state.activeArtistId];
             const { requestId } = action.payload as OnlineFeatureOffer;
 
-            let updatedEmails = activeData.emails.map(e => {
+            let updatedEmails = activeData.inbox.map(e => {
                 if (e.offer?.type === 'onlineFeatureOffer' && e.offer.requestId === requestId) {
                     return { ...e, offer: { ...e.offer, isAccepted: true } }; // mark as processed
                 }
@@ -7021,7 +7021,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     ...state.artistsData,
                     [state.activeArtistId]: {
                         ...activeData,
-                        emails: updatedEmails,
+                        inbox: updatedEmails,
                     }
                 }
             };
@@ -9704,7 +9704,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [gameState, isLoading, isAuthLoading, user]);
 
     useEffect(() => {
-        if (gameState.careerMode === 'online' && gameState.onlineArtist && user) {
+        if (gameState.careerMode === 'online' && gameState.onlineArtist?.id && user?.uid) {
             const fetchOnlineInfo = async () => {
                 const { getAllOnlineArtists, listenToXPosts, listenToDirectMessages, listenToFeatureRequests, listenToFeatureRequestApprovals } = await import('../firebase');
                 const artists = await getAllOnlineArtists();
@@ -9738,7 +9738,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 promise.then(cleanup => cleanup && cleanup());
             };
         }
-    }, [gameState.careerMode, gameState.onlineArtist, user]);
+    }, [gameState.careerMode, gameState.onlineArtist?.id, user?.uid]);
 
     const { activeArtistId, soloArtist, group, artistsData, careerMode } = gameState;
 
@@ -9805,6 +9805,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         allPlayerArtists = [soloArtist];
     } else if (careerMode === 'group' && group) {
         allPlayerArtists = [group, ...group.members];
+    } else if (careerMode === 'online' && gameState.onlineArtist) {
+        allPlayerArtists = [gameState.onlineArtist];
     }
     
     if (gameState.extraPlayableArtists) {

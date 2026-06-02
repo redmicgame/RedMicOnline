@@ -1,11 +1,16 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, orderBy, onSnapshot, serverTimestamp, limit, addDoc, deleteDoc } from 'firebase/firestore';
-import firebaseConfig from './firebase-applet-config.json';
+import { getDatabase, ref, set, get, child, push, remove, onValue, query as rtdbQuery, orderByChild, equalTo, limitToLast, serverTimestamp } from 'firebase/database';
+import firebaseConfigRaw from './firebase-applet-config.json';
+
+const firebaseConfig = {
+  ...firebaseConfigRaw,
+  databaseURL: `https://${firebaseConfigRaw.projectId}-default-rtdb.firebaseio.com`
+};
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = getDatabase(app);
 export const googleProvider = new GoogleAuthProvider();
 
 enum OperationType {
@@ -35,7 +40,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  console.error('Database Error: ', JSON.stringify(errInfo));
   
   if (errInfo.error.includes('resource-exhausted') || errInfo.error.includes('Quota limit exceeded')) {
      window.dispatchEvent(new Event('server-down'));
@@ -65,16 +70,16 @@ export const logout = async () => {
 export const getOrCreateUser = async (user: any) => {
     const path = `users/${user.uid}`;
     try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-            return userDoc.data();
+        const snapshot = await get(child(ref(db), path));
+        if (snapshot.exists()) {
+            return snapshot.val();
         } else {
             const newUser = {
                 uid: user.uid,
                 email: user.email,
                 createdAt: Date.now()
             };
-            await setDoc(doc(db, 'users', user.uid), newUser);
+            await set(ref(db, path), newUser);
             return newUser;
         }
     } catch(err) {
@@ -89,10 +94,16 @@ export const createOnlineArtist = async (userId: string, name: string, genre: st
             throw new Error(`The name "${name}" is reserved. You must enter a valid invite code to use it.`);
         }
 
-        const q = query(collection(db, 'artists'), where('name', '==', name));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            throw new Error(`The artist name "${name}" is already taken by another online player.`);
+        const artistsRef = ref(db, 'artists');
+        const snapshot = await get(artistsRef);
+        if (snapshot.exists()) {
+            let nameTaken = false;
+            snapshot.forEach((child) => {
+                if (child.val().name === name) nameTaken = true;
+            });
+            if (nameTaken) {
+                throw new Error(`The artist name "${name}" is already taken by another online player.`);
+            }
         }
     } catch (err: any) {
         throw new Error(err.message);
@@ -111,14 +122,14 @@ export const createOnlineArtist = async (userId: string, name: string, genre: st
             createdAt: Date.now(),
             updatedAt: Date.now()
         };
-        await setDoc(doc(db, 'artists', artistId), newArtist);
+        await set(ref(db, path), newArtist);
         
         // Update user
-        const userRef = doc(db, 'users', userId);
-        const userDoc = await getDoc(userRef);
-        if(userDoc.exists()) {
-            const userData = userDoc.data();
-            await setDoc(userRef, {
+        const userPath = `users/${userId}`;
+        const userSnapshot = await get(child(ref(db), userPath));
+        if(userSnapshot.exists()) {
+            const userData = userSnapshot.val();
+            await set(ref(db, userPath), {
                 ...userData,
                 activeArtistId: artistId,
                 updatedAt: Date.now()
@@ -134,9 +145,9 @@ export const createOnlineArtist = async (userId: string, name: string, genre: st
 export const getArtistData = async (artistId: string) => {
     const path = `artists/${artistId}`;
     try {
-        const artistDoc = await getDoc(doc(db, 'artists', artistId));
-        if (artistDoc.exists()) {
-            return { id: artistDoc.id, ...artistDoc.data() };
+        const snapshot = await get(child(ref(db), path));
+        if (snapshot.exists()) {
+            return { id: artistId, ...snapshot.val() };
         }
         return null;
     } catch (err) {
@@ -146,10 +157,15 @@ export const getArtistData = async (artistId: string) => {
 
 export const updateOnlineArtistFeaturePrice = async (artistId: string, price: number) => {
     try {
-        await setDoc(doc(db, 'artists', artistId), {
-            featurePrice: price,
-            updatedAt: Date.now()
-        }, { merge: true });
+        const artistRef = ref(db, `artists/${artistId}`);
+        const snapshot = await get(artistRef);
+        if (snapshot.exists()) {
+            await set(artistRef, {
+                ...snapshot.val(),
+                featurePrice: price,
+                updatedAt: Date.now()
+            });
+        }
     } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `artists/${artistId}`);
     }
@@ -157,13 +173,16 @@ export const updateOnlineArtistFeaturePrice = async (artistId: string, price: nu
 
 export const getAllOnlineArtists = async () => {
     try {
-        const q = query(collection(db, 'artists'), orderBy('createdAt', 'desc'), limit(100));
-        const querySnapshot = await getDocs(q);
+        const artistsRef = ref(db, 'artists');
+        const snapshot = await get(artistsRef);
         const artists: any[] = [];
-        querySnapshot.forEach((doc) => {
-            artists.push({ id: doc.id, ...doc.data() });
-        });
-        return artists;
+        if (snapshot.exists()) {
+            snapshot.forEach((childSnapshot) => {
+                artists.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+            artists.sort((a, b) => b.createdAt - a.createdAt);
+        }
+        return artists.slice(0, 100);
     } catch (err) {
         handleFirestoreError(err, OperationType.LIST, 'artists');
         return [];
@@ -173,12 +192,17 @@ export const getAllOnlineArtists = async () => {
 export const getUserSaves = async (userId: string) => {
     const path = 'saves';
     try {
-        const q = query(collection(db, 'saves'), where('userId', '==', userId));
-        const querySnapshot = await getDocs(q);
+        const savesRef = ref(db, 'saves');
+        const snapshot = await get(savesRef);
         const saves: any[] = [];
-        querySnapshot.forEach((doc) => {
-            saves.push({ id: doc.id, ...doc.data() });
-        });
+        if (snapshot.exists()) {
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                if (data.userId === userId) {
+                    saves.push({ id: childSnapshot.key, ...data });
+                }
+            });
+        }
         return saves;
     } catch(err) {
         handleFirestoreError(err, OperationType.LIST, path);
@@ -189,7 +213,7 @@ export const getUserSaves = async (userId: string) => {
 export const deleteCloudSave = async (userId: string, saveId: string) => {
     const path = `saves/${saveId}`;
     try {
-        await deleteDoc(doc(db, 'saves', saveId));
+        await remove(ref(db, path));
     } catch(err) {
         handleFirestoreError(err, OperationType.DELETE, path);
     }
@@ -200,13 +224,13 @@ export const saveGameToCloud = async (userId: string, saveId: string | null, gam
     const path = `saves/${newSaveId}`;
     try {
         const activeArtist = gameState.onlineArtist || gameState.soloArtist;
-        await setDoc(doc(db, 'saves', newSaveId), {
+        await set(ref(db, path), {
             userId,
             gameState,
             artistName: activeArtist?.name || 'Unknown',
             year: gameState.date?.year || 2024,
             week: gameState.date?.week || 1,
-            updatedAt: serverTimestamp()
+            updatedAt: Date.now() // Realtime DB has proper rules logic, but we use simple dates here
         });
         return newSaveId;
     } catch(err) {
@@ -217,9 +241,11 @@ export const saveGameToCloud = async (userId: string, saveId: string | null, gam
 // X posts
 export const publishXPost = async (authorId: string, authorName: string, text: string, postId?: string) => {
     try {
-        const postsRef = collection(db, 'x_posts');
-        await addDoc(postsRef, {
-            id: postId,
+        const actualPostId = postId || push(ref(db, 'x_posts')).key;
+        if (!actualPostId) return;
+        const postsRef = ref(db, `x_posts/${actualPostId}`);
+        await set(postsRef, {
+            id: actualPostId,
             authorId,
             authorName,
             content: text,
@@ -231,25 +257,32 @@ export const publishXPost = async (authorId: string, authorName: string, text: s
 };
 
 export const listenToXPosts = (callback: (posts: any[]) => void) => {
-    const q = query(collection(db, 'x_posts'), orderBy('createdAt', 'desc'), limit(50));
-    return onSnapshot(q, (snapshot) => {
-        const posts: any[] = [];
-        snapshot.forEach((doc) => {
-            posts.push({ id: doc.id, ...doc.data() });
-        });
+    const unsubscribe = onValue(ref(db, 'x_posts'), (snapshot) => {
+        let posts: any[] = [];
+        if (snapshot.exists()) {
+            snapshot.forEach((childSnapshot) => {
+                posts.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+            posts.sort((a, b) => b.createdAt - a.createdAt);
+            posts = posts.slice(0, 50);
+        }
         callback(posts);
     });
+    return () => unsubscribe(); // onValue returns an unsubscribe function in newer SDKs, 
+    // wait, onValue returns an unsubscribe function.
 };
 
 // Messages
 export const sendDirectMessage = async (senderId: string, receiverId: string, text: string, messageId?: string) => {
     try {
-        const messagesRef = collection(db, 'x_messages');
+        const actualMessageId = messageId || push(ref(db, 'x_messages')).key;
+        if (!actualMessageId) return;
+        const messagesRef = ref(db, `x_messages/${actualMessageId}`);
         const participants = [senderId, receiverId].sort();
         const chatId = participants.join('_');
         
-        await addDoc(messagesRef, {
-            id: messageId || crypto.randomUUID(),
+        await set(messagesRef, {
+            id: actualMessageId,
             chatId,
             senderId,
             receiverId,
@@ -262,26 +295,33 @@ export const sendDirectMessage = async (senderId: string, receiverId: string, te
 };
 
 export const listenToDirectMessages = (userId: string, callback: (messages: any[]) => void) => {
-    const messagesRef = collection(db, 'x_messages');
-    return onSnapshot(messagesRef, (snapshot) => {
+    const messagesRef = ref(db, 'x_messages');
+    // In RTDB, we can't do complex OR queries easily. We just pull messages that contain us in chatId.
+    // Or we just get all and filter (for client side since this is simple free tier).
+    // Or we could have structured data as x_messages/chatId/... maybe better.
+    const unsubscribe = onValue(messagesRef, (snapshot) => {
         const messages: any[] = [];
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.senderId === userId || data.receiverId === userId) {
-                messages.push({ id: doc.id, ...data });
-            }
-        });
-        // sort by createdAt
-        messages.sort((a, b) => a.createdAt - b.createdAt);
+        if (snapshot.exists()) {
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                if (data.senderId === userId || data.receiverId === userId) {
+                    messages.push({ id: childSnapshot.key, ...data });
+                }
+            });
+            messages.sort((a, b) => a.createdAt - b.createdAt);
+        }
         callback(messages);
     });
+    return () => unsubscribe();
 };
 
 // Online Music Distribution & Charts
 export const sendFeatureRequest = async (senderId: string, senderName: string, receiverId: string, requestType: 'song' | 'music_video', title: string, cost: number, targetId: string) => {
     try {
-        const requestsRef = collection(db, 'feature_requests');
-        await addDoc(requestsRef, {
+        const actualRequestId = push(ref(db, 'feature_requests')).key;
+        if (!actualRequestId) return;
+        const requestsRef = ref(db, `feature_requests/${actualRequestId}`);
+        await set(requestsRef, {
             senderId,
             senderName,
             receiverId,
@@ -298,33 +338,48 @@ export const sendFeatureRequest = async (senderId: string, senderName: string, r
 };
 
 export const listenToFeatureRequests = (userId: string, callback: (requests: any[]) => void) => {
-    const q = query(collection(db, 'feature_requests'), where('receiverId', '==', userId), where('status', '==', 'pending'));
-    return onSnapshot(q, (snapshot) => {
+    const unsubscribe = onValue(ref(db, 'feature_requests'), (snapshot) => {
         const requests: any[] = [];
-        snapshot.forEach((doc) => {
-            requests.push({ id: doc.id, ...doc.data() });
-        });
+        if (snapshot.exists()) {
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                if (data.receiverId === userId && data.status === 'pending') {
+                    requests.push({ id: childSnapshot.key, ...data });
+                }
+            });
+        }
         callback(requests);
     });
+    return () => unsubscribe();
 };
 
 export const listenToFeatureRequestApprovals = (userId: string, callback: (approvals: any[]) => void) => {
-    const q = query(collection(db, 'feature_requests'), where('senderId', '==', userId), where('status', '==', 'accepted'));
-    return onSnapshot(q, (snapshot) => {
+    const unsubscribe = onValue(ref(db, 'feature_requests'), (snapshot) => {
         const requests: any[] = [];
-        snapshot.forEach((doc) => {
-            requests.push({ id: doc.id, ...doc.data() });
-        });
+        if (snapshot.exists()) {
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                if (data.senderId === userId && data.status === 'accepted') {
+                    requests.push({ id: childSnapshot.key, ...data });
+                }
+            });
+        }
         callback(requests);
     });
+    return () => unsubscribe();
 };
 
 export const updateFeatureRequestStatus = async (requestId: string, status: 'accepted' | 'rejected') => {
     try {
-        await setDoc(doc(db, 'feature_requests', requestId), {
-            status,
-            updatedAt: Date.now()
-        }, { merge: true });
+        const requestRef = ref(db, `feature_requests/${requestId}`);
+        const snapshot = await get(requestRef);
+        if (snapshot.exists()) {
+            await set(requestRef, {
+                ...snapshot.val(),
+                status,
+                updatedAt: Date.now()
+            });
+        }
     } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `feature_requests/${requestId}`);
     }
@@ -332,7 +387,7 @@ export const updateFeatureRequestStatus = async (requestId: string, status: 'acc
 
 export const publishOnlineSong = async (artistId: string, artistName: string, songId: string, title: string, quality: number, genre: string) => {
     try {
-        await setDoc(doc(db, 'online_songs', songId), {
+        await set(ref(db, `online_songs/${songId}`), {
             artistId,
             artistName,
             title,
@@ -349,11 +404,16 @@ export const publishOnlineSong = async (artistId: string, artistName: string, so
 
 export const updateOnlineSongStreams = async (songId: string, allTimeStreams: number, weeklyStreams: number) => {
     try {
-        await setDoc(doc(db, 'online_songs', songId), {
-            allTimeStreams,
-            weeklyStreams,
-            updatedAt: Date.now()
-        }, { merge: true });
+        const songRef = ref(db, `online_songs/${songId}`);
+        const snapshot = await get(songRef);
+        if (snapshot.exists()) {
+            await set(songRef, {
+                ...snapshot.val(),
+                allTimeStreams,
+                weeklyStreams,
+                updatedAt: Date.now()
+            });
+        }
     } catch(err) {
         handleFirestoreError(err, OperationType.WRITE, 'online_songs');
     }
@@ -361,10 +421,15 @@ export const updateOnlineSongStreams = async (songId: string, allTimeStreams: nu
 
 export const getOnlineSpotifySongsChart = async () => {
     try {
-        const q = query(collection(db, 'online_songs'), orderBy('weeklyStreams', 'desc'), limit(50));
-        const snapshot = await getDocs(q);
-        const songs: any[] = [];
-        snapshot.forEach(doc => songs.push({ id: doc.id, ...doc.data() }));
+        const snapshot = await get(ref(db, 'online_songs'));
+        let songs: any[] = [];
+        if (snapshot.exists()) {
+            snapshot.forEach(childSnapshot => {
+                songs.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+            songs.sort((a, b) => (b.weeklyStreams || 0) - (a.weeklyStreams || 0));
+            songs = songs.slice(0, 50);
+        }
         return songs;
     } catch(err) {
         handleFirestoreError(err, OperationType.LIST, 'online_songs');
@@ -374,7 +439,7 @@ export const getOnlineSpotifySongsChart = async () => {
 
 export const publishOnlineAlbum = async (artistId: string, artistName: string, albumId: string, title: string, type: string) => {
     try {
-        await setDoc(doc(db, 'online_albums', albumId), {
+        await set(ref(db, `online_albums/${albumId}`), {
             artistId,
             artistName,
             title,
@@ -390,11 +455,16 @@ export const publishOnlineAlbum = async (artistId: string, artistName: string, a
 
 export const updateOnlineAlbumStreams = async (albumId: string, allTimeStreams: number, weeklyStreams: number) => {
     try {
-        await setDoc(doc(db, 'online_albums', albumId), {
-            allTimeStreams,
-            weeklyStreams,
-            updatedAt: Date.now()
-        }, { merge: true });
+        const albumRef = ref(db, `online_albums/${albumId}`);
+        const snapshot = await get(albumRef);
+        if (snapshot.exists()) {
+            await set(albumRef, {
+                ...snapshot.val(),
+                allTimeStreams,
+                weeklyStreams,
+                updatedAt: Date.now()
+            });
+        }
     } catch(err) {
         handleFirestoreError(err, OperationType.WRITE, 'online_albums');
     }
@@ -402,10 +472,15 @@ export const updateOnlineAlbumStreams = async (albumId: string, allTimeStreams: 
 
 export const getOnlineSpotifyAlbumsChart = async () => {
     try {
-        const q = query(collection(db, 'online_albums'), orderBy('weeklyStreams', 'desc'), limit(50));
-        const snapshot = await getDocs(q);
-        const albums: any[] = [];
-        snapshot.forEach(doc => albums.push({ id: doc.id, ...doc.data() }));
+        const snapshot = await get(ref(db, 'online_albums'));
+        let albums: any[] = [];
+        if (snapshot.exists()) {
+            snapshot.forEach(childSnapshot => {
+                albums.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+            albums.sort((a, b) => (b.weeklyStreams || 0) - (a.weeklyStreams || 0));
+            albums = albums.slice(0, 50);
+        }
         return albums;
     } catch(err) {
         handleFirestoreError(err, OperationType.LIST, 'online_albums');
@@ -413,11 +488,9 @@ export const getOnlineSpotifyAlbumsChart = async () => {
     }
 };
 
-// Test connection strictly
-import { getDocFromServer } from 'firebase/firestore';
 async function testConnection() {
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    const snap = await get(ref(db, 'test/connection'));
   } catch (error) {
     if(error instanceof Error && error.message.includes('the client is offline')) {
       console.error("Please check your Firebase configuration.");
@@ -425,3 +498,4 @@ async function testConnection() {
   }
 }
 testConnection();
+

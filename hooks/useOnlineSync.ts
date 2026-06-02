@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useGame } from '../context/GameContext';
-import { onSnapshot, collection, query, limit, orderBy } from 'firebase/firestore';
+import { ref, onValue, query, orderByChild, limitToLast } from 'firebase/database';
 import { db } from '../firebase';
 
 export const useOnlineSync = () => {
@@ -12,48 +12,60 @@ export const useOnlineSync = () => {
         const EPOCH = 1780344837000;
 
         // Listen to top posts
-        const qPosts = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(50));
-        const unsubPosts = onSnapshot(qPosts, (snapshot) => {
-            const posts: any[] = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.createdAt >= EPOCH) posts.push({ id: doc.id, ...data });
-            });
-            dispatch({ type: 'SYNC_ONLINE_POSTS', payload: posts });
-        });
+        const unsubPosts = onValue(ref(db, 'posts'), (snapshot) => {
+            let posts: any[] = [];
+            if (snapshot.exists()) {
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data.createdAt >= EPOCH) posts.push({ id: child.key, ...data });
+                });
+            }
+            posts.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            posts = posts.slice(-50);
+            dispatch({ type: 'SYNC_ONLINE_POSTS', payload: posts.reverse() });
+        }, (error) => console.error("Error syncing posts:", error));
 
         // Listen to songs
-        const qSongs = query(collection(db, 'songs'), orderBy('createdAt', 'desc'), limit(100));
-        const unsubSongs = onSnapshot(qSongs, (snapshot) => {
-            const songs: any[] = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.createdAt >= EPOCH) songs.push({ id: doc.id, ...data });
-            });
-            dispatch({ type: 'SYNC_ONLINE_SONGS', payload: songs });
-        });
+        const unsubSongs = onValue(ref(db, 'songs'), (snapshot) => {
+            let songs: any[] = [];
+            if (snapshot.exists()) {
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data.createdAt >= EPOCH) songs.push({ id: child.key, ...data });
+                });
+            }
+            songs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            songs = songs.slice(-100);
+            dispatch({ type: 'SYNC_ONLINE_SONGS', payload: songs.reverse() });
+        }, (error) => console.error("Error syncing songs:", error));
         
         // Listen to albums
-        const qAlbums = query(collection(db, 'albums'), orderBy('createdAt', 'desc'), limit(50));
-        const unsubAlbums = onSnapshot(qAlbums, (snapshot) => {
-            const albums: any[] = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.createdAt >= EPOCH) albums.push({ id: doc.id, ...data });
-            });
-            dispatch({ type: 'SYNC_ONLINE_ALBUMS', payload: albums });
-        });
+        const unsubAlbums = onValue(ref(db, 'albums'), (snapshot) => {
+            let albums: any[] = [];
+            if (snapshot.exists()) {
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data.createdAt >= EPOCH) albums.push({ id: child.key, ...data });
+                });
+            }
+            albums.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            albums = albums.slice(-50);
+            dispatch({ type: 'SYNC_ONLINE_ALBUMS', payload: albums.reverse() });
+        }, (error) => console.error("Error syncing albums:", error));
 
         // Listen to artists
-        const qArtists = query(collection(db, 'artists'), orderBy('createdAt', 'desc'), limit(100));
-        const unsubArtists = onSnapshot(qArtists, (snapshot) => {
-            const artists: any[] = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.createdAt >= EPOCH) artists.push({ id: doc.id, ...data });
-            });
-            dispatch({ type: 'SYNC_ONLINE_ARTISTS', payload: artists });
-        });
+        const unsubArtists = onValue(ref(db, 'artists'), (snapshot) => {
+            let artists: any[] = [];
+            if (snapshot.exists()) {
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data.createdAt >= EPOCH) artists.push({ id: child.key, ...data });
+                });
+            }
+            artists.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            artists = artists.slice(-100);
+            dispatch({ type: 'SYNC_ONLINE_ARTISTS', payload: artists.reverse() });
+        }, (error) => console.error("Error syncing artists:", error));
 
         return () => {
             unsubPosts();
@@ -63,3 +75,4 @@ export const useOnlineSync = () => {
         };
     }, [gameState.offlineMode, dispatch]);
 };
+
