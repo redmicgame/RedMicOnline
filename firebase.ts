@@ -82,7 +82,22 @@ export const getOrCreateUser = async (user: any) => {
     }
 }
 
-export const createOnlineArtist = async (userId: string, name: string, genre: string) => {
+export const createOnlineArtist = async (userId: string, name: string, genre: string, code?: string) => {
+    try {
+        const uppercaseName = name.toUpperCase();
+        if ((uppercaseName === 'RIHANNA' || uppercaseName === 'ADÉLA') && code !== '2345') {
+            throw new Error(`The name "${name}" is reserved. You must enter a valid invite code to use it.`);
+        }
+
+        const q = query(collection(db, 'artists'), where('name', '==', name));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            throw new Error(`The artist name "${name}" is already taken by another online player.`);
+        }
+    } catch (err: any) {
+        throw new Error(err.message);
+    }
+
     const artistId = `artist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const path = `artists/${artistId}`;
     try {

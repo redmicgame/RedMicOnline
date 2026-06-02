@@ -271,26 +271,28 @@ const MiscTab: React.FC = () => {
                     </button>
                 </div>
 
-                <div className="bg-zinc-800 p-4 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">Red Mic Pro</h3>
-                    {activeArtistData.redMicPro.unlocked ? (
-                        <>
-                            <p className="text-sm text-green-400 mb-2">You have Red Mic Pro! Enjoy exclusive features.</p>
-                            <button onClick={() => dispatch({ type: 'CHANGE_VIEW', payload: 'redMicProDashboard' })} className="w-full bg-yellow-500/20 text-yellow-300 p-3 rounded-lg text-left hover:bg-yellow-500/30 transition-colors flex justify-between items-center">
-                                <span>Open Pro Dashboard</span>
-                                <ChevronRightIcon className="w-6 h-6" />
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <p className="text-sm text-zinc-400 mb-2">Unlock exclusive features to supercharge your career.</p>
-                            <button onClick={() => dispatch({ type: 'CHANGE_VIEW', payload: 'redMicProUnlock' })} className="w-full bg-red-900/50 p-3 rounded-lg text-left text-red-300 hover:bg-red-900 transition-colors flex justify-between items-center">
-                                <span>Learn More & Unlock</span>
-                                <ChevronRightIcon className="w-6 h-6" />
-                            </button>
-                        </>
-                    )}
-                </div>
+                {gameState.careerMode !== 'online' && (
+                    <div className="bg-zinc-800 p-4 rounded-lg">
+                        <h3 className="font-bold text-lg mb-2">Red Mic Pro</h3>
+                        {activeArtistData.redMicPro.unlocked ? (
+                            <>
+                                <p className="text-sm text-green-400 mb-2">You have Red Mic Pro! Enjoy exclusive features.</p>
+                                <button onClick={() => dispatch({ type: 'CHANGE_VIEW', payload: 'redMicProDashboard' })} className="w-full bg-yellow-500/20 text-yellow-300 p-3 rounded-lg text-left hover:bg-yellow-500/30 transition-colors flex justify-between items-center">
+                                    <span>Open Pro Dashboard</span>
+                                    <ChevronRightIcon className="w-6 h-6" />
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-sm text-zinc-400 mb-2">Unlock exclusive features to supercharge your career.</p>
+                                <button onClick={() => dispatch({ type: 'CHANGE_VIEW', payload: 'redMicProUnlock' })} className="w-full bg-red-900/50 p-3 rounded-lg text-left text-red-300 hover:bg-red-900 transition-colors flex justify-between items-center">
+                                    <span>Learn More & Unlock</span>
+                                    <ChevronRightIcon className="w-6 h-6" />
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
 
                  <div className="bg-zinc-800 p-4 rounded-lg">
                     <h3 className="font-bold text-lg mb-2">X Fan Content (Images)</h3>
