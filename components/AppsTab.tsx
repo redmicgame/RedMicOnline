@@ -120,6 +120,21 @@ const AppItem: React.FC<{ app: AppInfo }> = ({ app }) => {
 };
 
 const AppsTab: React.FC = () => {
+    const { gameState } = useGame();
+    const isOnline = gameState.careerMode === 'online';
+
+    const filteredCategories = appCategories.map(cat => ({
+        ...cat,
+        apps: cat.apps.filter(app => {
+            if (isOnline && (app.name === 'Google' || app.name === 'OnlyFans')) {
+                return false;
+            }
+            return true;
+        })
+    })).filter(cat => cat.apps.length > 0);
+
+    const filteredEssentialApps = filteredCategories.flatMap(cat => cat.apps).filter(app => essentialAppNames.includes(app.name));
+
     return (
         <div className="bg-[#121212] min-h-full p-4 text-white">
             <h1 className="text-4xl font-bold">Apps</h1>
@@ -128,12 +143,12 @@ const AppsTab: React.FC = () => {
             <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Essential Apps</h2>
                 <div className="space-y-6">
-                    {essentialApps.map(app => <AppItem key={`essential-${app.name}`} app={app} />)}
+                    {filteredEssentialApps.map(app => <AppItem key={`essential-${app.name}`} app={app} />)}
                 </div>
             </div>
 
             <div className="space-y-8">
-                {appCategories.map(category => (
+                {filteredCategories.map(category => (
                     <div key={category.title}>
                         <h2 className="text-2xl font-bold mb-4">{category.title}</h2>
                         <div className="space-y-6">

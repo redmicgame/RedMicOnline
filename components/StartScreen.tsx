@@ -132,65 +132,66 @@ const StartScreen: React.FC = () => {
                 <h1 className="text-4xl font-black text-center text-red-500 mb-2">RED MIC</h1>
                 <p className="text-center text-zinc-400 mb-6 font-semibold">THE MUSIC INDUSTRY SIMULATOR</p>
 
-                <div className="flex gap-2 p-1 bg-zinc-900 rounded-lg mb-6">
-                    <button 
-                        onClick={() => setMode('classic')}
-                        className={`flex-1 py-2 rounded-md font-bold transition-colors ${mode === 'classic' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-                    >
-                        Local
-                    </button>
-                    <button 
-                        onClick={() => setMode('online')}
-                        className={`flex-1 py-2 rounded-md font-bold transition-colors ${mode === 'online' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-                    >
-                        Online
-                    </button>
-                </div>
+                {/* Removed Classic Mode UI and Mode Toggles per user request */}
 
-                {mode === 'classic' && (
-                    <form onSubmit={handleClassicSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-1">Artist Name</label>
-                            <input type="text" value={artistName} onChange={e => setArtistName(e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg h-12 px-4 focus:ring-2 focus:ring-red-500 outline-none" required />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-1">Difficulty</label>
-                            <select value={difficulty} onChange={e => setDifficulty(e.target.value as any)} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg h-12 px-4 focus:ring-2 focus:ring-red-500 outline-none">
-                                <option value="easy">Easy (Start with $500k)</option>
-                                <option value="normal">Normal (Start with $250k)</option>
-                                <option value="hard">Hard (Start with $50k)</option>
-                                <option value="extreme">Extreme (Start with $0)</option>
-                            </select>
-                        </div>
-                        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-                        <button type="submit" className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors mt-2 text-lg tracking-wide">
-                            START GAME
-                        </button>
-                        
-                        <div className="pt-4 border-t border-zinc-700 mt-6">
-                            <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
-                            <button type="button" onClick={handleFileUploadClick} className="w-full h-12 bg-zinc-700 text-white font-bold rounded-lg hover:bg-zinc-600 transition-colors">
-                                LOAD SAVE
-                            </button>
-                        </div>
-                    </form>
-                )}
-
-                {mode === 'online' && (
-                    <div className="space-y-4">
-                        <div className="bg-zinc-900 border-2 border-red-900/50 p-6 rounded-xl text-center">
-                            <div className="w-16 h-16 bg-red-900/20 rounded-full mx-auto flex items-center justify-center mb-4">
-                                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <form onSubmit={handleOnlineSubmit} className="space-y-4">
+                        {!user ? (
+                            <div className="mb-6 flex justify-center flex-col items-center gap-4">
+                                <p className="text-zinc-400 text-center text-sm">To enter the global servers, please sign in.</p>
+                                <button type="button" onClick={login} className="flex items-center justify-center w-full gap-3 bg-white text-black font-bold h-12 rounded-lg hover:bg-zinc-200 transition-colors">
+                                    <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
+                                    Sign in with Google
+                                </button>
                             </div>
-                            <h2 className="text-2xl font-black text-white mb-2">SERVERS OFFLINE</h2>
-                            <p className="text-zinc-400 mb-4 text-sm leading-relaxed">
-                                Red Mic Online servers are currently down for maintenance and upgrades. 
-                                We are working to bring them back online soon. In the meantime, you can continue playing 
-                                Local career mode.
-                            </p>
-                        </div>
-                    </div>
-                )}
+                        ) : (
+                            <div className="mb-4 text-center text-zinc-400 text-xs">
+                                Signed in as {user.email}
+                            </div>
+                        )}
+
+                        {user && (isLoading ? (
+                            <p className="text-center animate-pulse text-zinc-400 h-24 flex items-center justify-center">Checking online profile...</p>
+                        ) : onlineProfile ? (
+                            <div className="bg-zinc-900 p-4 rounded-lg text-center border border-blue-500/30">
+                                <div className="w-16 h-16 bg-blue-600 rounded-full mx-auto flex items-center justify-center text-2xl mb-3 font-bold">
+                                    {(onlineProfile.name || '?').charAt(0)}
+                                </div>
+                                <h3 className="text-xl font-bold text-white">{onlineProfile.name || 'Unknown User'}</h3>
+                                <p className="text-red-400 font-bold mt-1">${(onlineProfile.funds || 0).toLocaleString()}</p>
+                                <p className="text-zinc-400 text-sm mt-3 border-t border-zinc-800 pt-3">Ready to enter the servers?</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-300 mb-1">Artist Name</label>
+                                    <input type="text" value={onlineArtistName} onChange={e => setOnlineArtistName(e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg h-12 px-4 focus:ring-2 focus:ring-blue-500 outline-none" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-300 mb-1">Genre</label>
+                                    <select value={onlineGenre} onChange={e => setOnlineGenre(e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg h-12 px-4 focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <option>Pop</option>
+                                        <option>Hip Hop / Rap</option>
+                                        <option>R&B</option>
+                                        <option>Rock</option>
+                                        <option>Country</option>
+                                        <option>Electronic</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-300 mb-1">Invite Code (Optional)</label>
+                                    <input type="text" value={inviteCode} onChange={e => setInviteCode(e.target.value)} placeholder="If reserving a special name" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg h-12 px-4 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                </div>
+                            </>
+                        ))}
+
+                        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+
+                        {user && (
+                            <button type="submit" disabled={isLoading} className="w-full h-12 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors mt-2 shadow-lg shadow-blue-500/20 text-lg tracking-wide">
+                                {onlineProfile ? "ENTER ONLINE SERVER" : "CREATE ONLINE ARTIST"}
+                            </button>
+                        )}
+                </form>
             </div>
         </div>
     );

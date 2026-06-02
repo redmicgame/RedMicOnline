@@ -155,6 +155,38 @@ export const getArtistData = async (artistId: string) => {
     }
 }
 
+export const updateOnlineArtistProfileImage = async (artistId: string, image: string) => {
+    try {
+        const artistRef = ref(db, `artists/${artistId}`);
+        const snapshot = await get(artistRef);
+        if (snapshot.exists()) {
+            await set(artistRef, {
+                ...snapshot.val(),
+                image,
+                updatedAt: Date.now()
+            });
+        }
+    } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `artists/${artistId}`);
+    }
+};
+
+export const updateOnlineArtistName = async (artistId: string, name: string) => {
+    try {
+        const artistRef = ref(db, `artists/${artistId}`);
+        const snapshot = await get(artistRef);
+        if (snapshot.exists()) {
+            await set(artistRef, {
+                ...snapshot.val(),
+                name,
+                updatedAt: Date.now()
+            });
+        }
+    } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `artists/${artistId}`);
+    }
+};
+
 export const updateOnlineArtistFeaturePrice = async (artistId: string, price: number) => {
     try {
         const artistRef = ref(db, `artists/${artistId}`);
@@ -257,22 +289,6 @@ export const publishXPost = async (authorId: string, authorName: string, text: s
     } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, 'x_posts');
     }
-};
-
-export const listenToXPosts = (callback: (posts: any[]) => void) => {
-    const unsubscribe = onValue(ref(db, 'x_posts'), (snapshot) => {
-        let posts: any[] = [];
-        if (snapshot.exists()) {
-            snapshot.forEach((childSnapshot) => {
-                posts.push({ id: childSnapshot.key, ...childSnapshot.val() });
-            });
-            posts.sort((a, b) => b.createdAt - a.createdAt);
-            posts = posts.slice(0, 50);
-        }
-        callback(posts);
-    });
-    return () => unsubscribe(); // onValue returns an unsubscribe function in newer SDKs, 
-    // wait, onValue returns an unsubscribe function.
 };
 
 // Messages

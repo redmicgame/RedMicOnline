@@ -573,8 +573,6 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
     };
 
     switch (action.type) {
-        case 'SYNC_ONLINE_POSTS':
-            return { ...state, onlinePosts: action.payload };
         case 'SYNC_ONLINE_SONGS':
             return { ...state, onlineSongs: action.payload };
         case 'SYNC_ONLINE_ALBUMS':
@@ -9737,13 +9735,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         if (gameState.careerMode === 'online' && gameState.onlineArtist?.id && user?.uid) {
             const fetchOnlineInfo = async () => {
-                const { getAllOnlineArtists, listenToXPosts, listenToDirectMessages, listenToFeatureRequests, listenToFeatureRequestApprovals } = await import('../firebase');
-                const artists = await getAllOnlineArtists();
-                dispatch({ type: 'SET_ONLINE_ARTISTS', payload: artists });
-
-                const unsubPosts = listenToXPosts((posts) => {
-                    dispatch({ type: 'SYNC_ONLINE_POSTS', payload: posts });
-                });
+                const { listenToDirectMessages, listenToFeatureRequests, listenToFeatureRequestApprovals } = await import('../firebase');
 
                 const unsubMessages = listenToDirectMessages(gameState.onlineArtist!.id, (messages) => {
                     dispatch({ type: 'SYNC_ONLINE_MESSAGES', payload: messages });
@@ -9776,55 +9768,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Synchronize released songs/albums to Firebase for global online charts
     useEffect(() => {
         if (!isLoading && !isAuthLoading && gameState.careerMode === 'online' && user && gameState.activeArtistId) {
-            const syncMusicToCloud = async () => {
-                try {
-                    const activeData = gameState.artistsData[gameState.activeArtistId];
-                    if (!activeData) return;
-                    
-                    const { publishOnlineSong, publishOnlineAlbum, getOnlineSpotifySongsChart, getOnlineSpotifyAlbumsChart } = await import('../firebase');
-                    
-                    // Push all released songs with their current streams
-                    for (const song of activeData.songs) {
-                        if (song.isReleased) {
-                            await publishOnlineSong(
-                                gameState.activeArtistId, 
-                                gameState.soloArtist?.name || 'Unknown', 
-                                song.id, 
-                                song.title, 
-                                song.quality, 
-                                song.genre || 'Pop'
-                            );
-                            // Also update streams (assuming weekly streams is lastWeekStreams)
-                            const { updateOnlineSongStreams } = await import('../firebase');
-                            await updateOnlineSongStreams(song.id, song.streams || 0, song.lastWeekStreams || 0);
-                        }
-                    }
 
-                    // Push all released albums with their current streams
-                    for (const album of activeData.releases) {
-                        await publishOnlineAlbum(
-                            gameState.activeArtistId,
-                            gameState.soloArtist?.name || 'Unknown',
-                            album.id,
-                            album.title,
-                            album.type
-                        );
-                        const { updateOnlineAlbumStreams } = await import('../firebase');
-                        await updateOnlineAlbumStreams(album.id, album.streams || 0, album.lastWeekStreams || 0);
-                    }
-
-                    // Fetch global charts and inject into state
-                    const onlineSongs = await getOnlineSpotifySongsChart();
-                    dispatch({ type: 'SYNC_ONLINE_SONGS', payload: onlineSongs });
-                    const onlineAlbums = await getOnlineSpotifyAlbumsChart();
-                    dispatch({ type: 'SYNC_ONLINE_ALBUMS', payload: onlineAlbums });
-                } catch(err) {
-                    console.error("Failed to sync music to cloud", err);
-                }
-            };
-
-            const timeout = setTimeout(syncMusicToCloud, 5000); // 5 sec debounce
-            return () => clearTimeout(timeout);
         }
     }, [gameState.date.week, gameState.date.year, isLoading, isAuthLoading, user, gameState.careerMode]);
     const activeArtistData = activeArtistId ? artistsData[activeArtistId] : null;

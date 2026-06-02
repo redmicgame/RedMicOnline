@@ -423,7 +423,7 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
         }
     };
 
-    const findUser = (id: string) => {
+    const findUser = (id: string, post?: XPost) => {
         if (!gameState.offlineMode && id.startsWith('artist_') && gameState.onlineArtists) {
             const onlineAuthor = gameState.onlineArtists.find(a => a.id === id);
             if (onlineAuthor) {
@@ -436,7 +436,17 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
                 } as XUser;
             }
         }
-        return xUsers.find(u => u.id === id) || SYSTEM_USERS_FALLBACK[id];
+        let found = xUsers.find(u => u.id === id);
+        if (!found && post && (post as any).authorName) {
+            return {
+                id, 
+                name: (post as any).authorName, 
+                username: (post as any).authorName.replace(/\s+/g, '').toLowerCase(),
+                avatar: 'https://ui-avatars.com/api/?background=random', 
+                isVerified: false
+            } as XUser;
+        }
+        return found || SYSTEM_USERS_FALLBACK[id];
     };
 
     const sortedPosts = [...xPosts].sort((a, b) => {
@@ -475,7 +485,7 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
                     </div>
                 ))}
             </div>
-            {displayedPosts.map(post => <Post key={post.id} post={post} author={findUser(post.authorId)} onQuote={onQuote} />)}
+            {displayedPosts.map(post => <Post key={post.id} post={post} author={findUser(post.authorId, post)} onQuote={onQuote} />)}
         </div>
     );
 };
@@ -548,7 +558,7 @@ const ExploreView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote })
                     {searchResults.posts.length > 0 && (
                         <div>
                             <h3 className="font-bold p-3 text-lg">Posts</h3>
-                            {searchResults.posts.map(p => <Post key={p.id} post={p} author={findUser(p.authorId)} onQuote={onQuote} />)}
+                            {searchResults.posts.map(p => <Post key={p.id} post={p} author={findUser(p.authorId, p)} onQuote={onQuote} />)}
                         </div>
                     )}
                     {searchResults.users.length === 0 && searchResults.posts.length === 0 && (

@@ -669,9 +669,14 @@ const S4AProfile: React.FC = () => {
     const independentNameChanges = activeArtistData.independentNameChanges || 0;
     const canChangeName = !contract && independentNameChanges < 2;
 
-    const handleNameChangeSubmit = () => {
+    const handleNameChangeSubmit = async () => {
         if (newNameInput.trim() && canChangeName) {
-            dispatch({ type: 'CHANGE_STAGE_NAME', payload: { newName: newNameInput.trim() } });
+            const newName = newNameInput.trim();
+            if (gameState.careerMode === 'online') {
+                const { updateOnlineArtistName } = await import('../firebase');
+                await updateOnlineArtistName(activeArtist.id, newName);
+            }
+            dispatch({ type: 'CHANGE_STAGE_NAME', payload: { newName } });
             setShowNameChangeModal(false);
             setNewNameInput('');
         }
@@ -731,11 +736,15 @@ const S4AProfile: React.FC = () => {
                     <img src={activeArtist.image} alt={activeArtist.name} className="w-16 h-16 rounded-full object-cover shadow-sm bg-zinc-300" />
                     <div>
                         <p className="text-xs text-zinc-500 mb-2">Update your artist profile picture across the platform.</p>
-                        <form onSubmit={(e) => {
+                        <form onSubmit={async (e) => {
                             e.preventDefault();
                             const form = e.target as HTMLFormElement;
                             const newUrl = (form.elements.namedItem('imageUrl') as HTMLInputElement).value;
                             if (newUrl) {
+                                if (gameState.careerMode === 'online') {
+                                    const { updateOnlineArtistProfileImage } = await import('../firebase');
+                                    await updateOnlineArtistProfileImage(activeArtist.id, newUrl);
+                                }
                                 dispatch({ type: 'CHANGE_PROFILE_IMAGE', payload: { newImage: newUrl } });
                                 form.reset();
                             }

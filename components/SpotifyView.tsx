@@ -139,9 +139,14 @@ const SpotifyView: React.FC = () => {
         if (e.target.files && e.target.files[0] && activeArtist) {
             const file = e.target.files[0];
             const reader = new FileReader();
-            reader.onloadend = () => {
+            reader.onloadend = async () => {
                 const newImage = reader.result as string;
+                if (gameState.careerMode === 'online') {
+                    const { updateOnlineArtistProfileImage } = await import('../firebase');
+                    await updateOnlineArtistProfileImage(activeArtist.id, newImage);
+                }
                 dispatch({ type: 'UPDATE_ARTIST_IMAGE', payload: { artistId: activeArtist.id, newImage } });
+                dispatch({ type: 'CHANGE_PROFILE_IMAGE', payload: { newImage } });
             };
             reader.readAsDataURL(file);
         }
