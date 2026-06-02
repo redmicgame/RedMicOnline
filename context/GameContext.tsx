@@ -6835,7 +6835,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
              }));
 
              // merge with existing, replacing any with same id, avoid duplicates
-             const existingPosts = activeData.xPosts.filter(ep => !syncedPosts.find(sp => sp.id === ep.id));
+             const existingPosts = (activeData.xPosts || []).filter(ep => !syncedPosts.find(sp => sp.id === ep.id));
 
              return {
                  ...state,
@@ -6856,7 +6856,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             const chatsMap = new Map<string, XChat>();
 
             // pre-populate with existing non-firebase chats (NPCs)
-            activeData.xChats.forEach(c => {
+            (activeData.xChats || []).forEach(c => {
                 if (!c.id.includes('_')) { // Assuming firebase chats have '_'
                     chatsMap.set(c.id, c);
                 }
@@ -6910,7 +6910,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             const activeData = state.artistsData[state.activeArtistId];
             const requests = action.payload; // array of requests
 
-            let newEmails = [...activeData.inbox];
+            let newEmails = [...(activeData.inbox || [])];
             let changed = false;
 
             requests.forEach(req => {
@@ -6958,9 +6958,9 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             const activeData = state.artistsData[state.activeArtistId];
             const approvals = action.payload; // array of accepted requests where we are sender
 
-            let newSongs = [...activeData.songs];
-            let newVideos = [...activeData.videos];
-            let newEmails = [...activeData.inbox];
+            let newSongs = [...(activeData.songs || [])];
+            let newVideos = [...(activeData.videos || [])];
+            let newEmails = [...(activeData.inbox || [])];
             let changed = false;
 
             approvals.forEach(req => {

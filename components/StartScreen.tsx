@@ -197,10 +197,10 @@ const StartScreen: React.FC = () => {
                         ) : onlineProfile ? (
                             <div className="bg-zinc-900 p-4 rounded-lg text-center border border-blue-500/30">
                                 <div className="w-16 h-16 bg-blue-600 rounded-full mx-auto flex items-center justify-center text-2xl mb-3 font-bold">
-                                    {onlineProfile.name.charAt(0)}
+                                    {(onlineProfile.name || '?').charAt(0)}
                                 </div>
-                                <h3 className="text-xl font-bold text-white">{onlineProfile.name}</h3>
-                                <p className="text-red-400 font-bold mt-1">${(onlineProfile.funds).toLocaleString()}</p>
+                                <h3 className="text-xl font-bold text-white">{onlineProfile.name || 'Unknown User'}</h3>
+                                <p className="text-red-400 font-bold mt-1">${(onlineProfile.funds || 0).toLocaleString()}</p>
                                 <p className="text-zinc-400 text-sm mt-3 border-t border-zinc-800 pt-3">Ready to enter the servers?</p>
                             </div>
                         ) : (
