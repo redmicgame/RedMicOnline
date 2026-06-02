@@ -582,7 +582,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
         case 'START_ONLINE_GAME': {
             const { onlineArtist } = action.payload;
             
-            const tickRate = 1000 * 60 * 30; // 30 minutes
+            const tickRate = 1000 * 60 * 15; // 15 minutes
             // Global epoch set to reset the game server: 2026-06-01T21:24:28Z
             const EPOCH = 1780349068000;
             const now = Date.now();
