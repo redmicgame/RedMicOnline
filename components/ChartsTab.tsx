@@ -57,7 +57,7 @@ const ChartsTab: React.FC = () => {
 
             <div className="bg-zinc-800 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-bold text-lg">Billboard Top 50 Albums</h3>
+                    <h3 className="font-bold text-lg">Billboard 200</h3>
                     <button onClick={() => dispatch({ type: 'CHANGE_VIEW', payload: 'billboardAlbums' })} className="text-sm text-red-400 flex items-center gap-1">
                         View Chart <ChevronRightIcon className="w-4 h-4" />
                     </button>

@@ -12,12 +12,12 @@ export const useOnlineSync = () => {
         const EPOCH = 1780344837000;
 
         // Listen to top posts
-        const unsubPosts = onValue(ref(db, 'posts'), (snapshot) => {
+        const unsubPosts = onValue(ref(db, 'x_posts'), (snapshot) => {
             let posts: any[] = [];
             if (snapshot.exists()) {
                 snapshot.forEach(child => {
                     const data = child.val();
-                    if (data.createdAt >= EPOCH) posts.push({ id: child.key, ...data });
+                    if ((data.createdAt || data.date?.year) >= 0) posts.push({ id: child.key, ...data });
                 });
             }
             posts.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
@@ -31,12 +31,14 @@ export const useOnlineSync = () => {
             if (snapshot.exists()) {
                 snapshot.forEach(child => {
                     const data = child.val();
-                    if (data.createdAt >= EPOCH) songs.push({ id: child.key, ...data });
+                    if (((data.createdAt || data.updatedAt) >= EPOCH || true) && (!data.type || data.type === 'Single')) {
+                        songs.push({ id: child.key, ...data });
+                    }
                 });
             }
-            songs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-            songs = songs.slice(-100);
-            dispatch({ type: 'SYNC_ONLINE_SONGS', payload: songs.reverse() });
+            songs.sort((a, b) => (b.lastWeekStreams || 0) - (a.lastWeekStreams || 0));
+            songs = songs.slice(0, 300);
+            dispatch({ type: 'SYNC_ONLINE_SONGS', payload: songs });
         }, (error) => console.error("Error syncing songs:", error));
         
         // Listen to albums
@@ -45,12 +47,14 @@ export const useOnlineSync = () => {
             if (snapshot.exists()) {
                 snapshot.forEach(child => {
                     const data = child.val();
-                    if (data.createdAt >= EPOCH) albums.push({ id: child.key, ...data });
+                    if (((data.createdAt || data.updatedAt) >= EPOCH || true) && (!data.type || data.type === 'Album' || data.type === 'EP' || data.type === 'Album (Deluxe)' || data.type === 'Compilation')) {
+                        albums.push({ id: child.key, ...data });
+                    }
                 });
             }
-            albums.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-            albums = albums.slice(-50);
-            dispatch({ type: 'SYNC_ONLINE_ALBUMS', payload: albums.reverse() });
+            albums.sort((a, b) => (b.weeklySales || 0) - (a.weeklySales || 0));
+            albums = albums.slice(0, 200);
+            dispatch({ type: 'SYNC_ONLINE_ALBUMS', payload: albums });
         }, (error) => console.error("Error syncing albums:", error));
 
         // Listen to artists

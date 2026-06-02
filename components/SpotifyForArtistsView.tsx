@@ -724,6 +724,28 @@ const S4AProfile: React.FC = () => {
                     <p className="text-xs text-zinc-500">You cannot change your stage name while signed to a label unless requested by them.</p>
                 )}
             </div>
+
+            <div className="bg-zinc-100 p-4 rounded-lg space-y-3">
+                <h2 className="font-bold flex items-center gap-2">Profile Image</h2>
+                <div className="flex items-center gap-4">
+                    <img src={activeArtist.image} alt={activeArtist.name} className="w-16 h-16 rounded-full object-cover shadow-sm bg-zinc-300" />
+                    <div>
+                        <p className="text-xs text-zinc-500 mb-2">Update your artist profile picture across the platform.</p>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const form = e.target as HTMLFormElement;
+                            const newUrl = (form.elements.namedItem('imageUrl') as HTMLInputElement).value;
+                            if (newUrl) {
+                                dispatch({ type: 'CHANGE_PROFILE_IMAGE', payload: { newImage: newUrl } });
+                                form.reset();
+                            }
+                        }} className="flex items-center gap-2">
+                            <input type="url" name="imageUrl" placeholder="Image URL..." className="px-3 py-1 text-sm text-black rounded-md w-48 border border-zinc-300" required />
+                            <button type="submit" className="bg-black text-white text-sm font-semibold px-4 py-1.5 rounded-full">Save</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
             
             <div className="bg-zinc-100 p-4 rounded-lg space-y-3">
                 <h2 className="font-bold">Pitch a song to playlists</h2>

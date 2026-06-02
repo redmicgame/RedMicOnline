@@ -24,7 +24,7 @@ const ChartHistoryView: React.FC = () => {
             case 'billboardTopAlbums':
                 history = gameState.albumChartHistory;
                 items = releases.filter(r => r.type !== 'Single');
-                title = 'Billboard Top 50 Albums';
+                title = 'Billboard 200';
                 break;
             case 'hotPopSongs':
                 history = gameState.hotPopSongsHistory;
@@ -119,7 +119,7 @@ const ChartHistoryView: React.FC = () => {
                     className="w-full bg-zinc-800 border-zinc-700 rounded-md shadow-sm h-12 px-3 font-semibold focus:ring-red-500 focus:border-red-500"
                 >
                     <option value="billboardHot100">Billboard Hot 100</option>
-                    <option value="billboardTopAlbums">Billboard Top 50 Albums</option>
+                    <option value="billboardTopAlbums">Billboard 200</option>
                     <option value="hotPopSongs">Hot Pop Songs</option>
                     <option value="hotRapRnb">Hot Rap/R&B Songs</option>
                     <option value="electronicChart">Electronic Chart</option>

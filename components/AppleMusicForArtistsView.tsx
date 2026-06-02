@@ -26,15 +26,16 @@ const AppleMusicForArtistsView: React.FC = () => {
         }
     };
 
-    const handleChangeDate = (submissionId: string) => {
-        const weeks = parseInt(prompt("How many weeks from now do you want this to release? (e.g. 4)", "4") || "", 10);
+    const [editingDateId, setEditingDateId] = useState<string | null>(null);
+
+    const handleChangeDate = (submissionId: string, weeks: number) => {
         if (!isNaN(weeks) && weeks > 0) {
             const newDate = getFutureDate(gameState.currentDate, weeks);
             dispatch({
                 type: 'EDIT_SUBMISSION_DATE',
                 payload: { submissionId, newDate }
             });
-            alert(`Release date changed to ${newDate.year} Week ${newDate.week}`);
+            setEditingDateId(null);
         }
     };
 
@@ -63,12 +64,25 @@ const AppleMusicForArtistsView: React.FC = () => {
                                         <h3 className="font-bold text-lg">{sub.release.title}</h3>
                                         <p className="text-sm text-zinc-500">Scheduled for Year {sub.projectReleaseDate?.year} Week {sub.projectReleaseDate?.week}</p>
                                     </div>
-                                    <button 
-                                        onClick={() => handleChangeDate(sub.id)}
-                                        className="bg-[#fa243c] text-white px-4 py-2 rounded-full text-sm font-bold"
-                                    >
-                                        Change Date
-                                    </button>
+                                    {editingDateId === sub.id ? (
+                                        <form onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const form = e.target as HTMLFormElement;
+                                            const input = form.elements.namedItem('weeks') as HTMLInputElement;
+                                            handleChangeDate(sub.id, parseInt(input.value, 10));
+                                        }} className="flex items-center gap-2">
+                                            <input type="number" name="weeks" min="1" placeholder="Weeks (e.g. 4)" className="px-3 py-1 text-sm text-black rounded-md w-32 border border-zinc-300" required />
+                                            <button type="submit" className="bg-black text-white text-sm font-semibold px-4 py-1.5 rounded-full">Save</button>
+                                            <button type="button" onClick={() => setEditingDateId(null)} className="text-sm text-zinc-400 px-2">Cancel</button>
+                                        </form>
+                                    ) : (
+                                        <button 
+                                            onClick={() => setEditingDateId(sub.id)}
+                                            className="bg-[#fa243c] text-white px-4 py-2 rounded-full text-sm font-bold"
+                                        >
+                                            Change Date
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>

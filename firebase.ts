@@ -249,7 +249,10 @@ export const publishXPost = async (authorId: string, authorName: string, text: s
             authorId,
             authorName,
             content: text,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            likes: Math.floor(Math.random() * 100),
+            retweets: Math.floor(Math.random() * 20),
+            views: Math.floor(Math.random() * 1000)
         });
     } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, 'x_posts');

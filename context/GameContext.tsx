@@ -928,6 +928,37 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 ...state,
                 activeYoutubeChannel: action.payload,
             };
+        case 'CHANGE_PROFILE_IMAGE': {
+            if (!state.activeArtistId) return state;
+            const { newImage } = action.payload;
+            
+            let updatedSoloArtist = state.soloArtist;
+            let updatedGroup = state.group;
+            let updatedExtra = state.extraPlayableArtists ? [...state.extraPlayableArtists] : undefined;
+            let updatedOnlineArtist = state.onlineArtist;
+            
+            if (state.soloArtist && state.soloArtist.id === state.activeArtistId) {
+                updatedSoloArtist = { ...state.soloArtist, image: newImage };
+            } else if (state.group && state.group.id === state.activeArtistId) {
+                updatedGroup = { ...state.group, image: newImage };
+            } else if (updatedExtra) {
+                const idx = updatedExtra.findIndex(a => a.id === state.activeArtistId);
+                if (idx !== -1) {
+                    updatedExtra[idx] = { ...updatedExtra[idx], image: newImage };
+                }
+            } else if (state.onlineArtist && state.onlineArtist.id === state.activeArtistId) {
+                updatedOnlineArtist = { ...state.onlineArtist, image: newImage };
+            }
+
+            return {
+                ...state,
+                soloArtist: updatedSoloArtist,
+                group: updatedGroup,
+                extraPlayableArtists: updatedExtra,
+                onlineArtist: updatedOnlineArtist,
+            };
+        }
+
         case 'CHANGE_STAGE_NAME': {
             if (!state.activeArtistId) return state;
             
@@ -3274,7 +3305,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             })) : [];
 
             // Add online songs
-            const onlineChartContenders = (!state.offlineMode && state.onlineSongs) ? state.onlineSongs.filter((s: any) => s.isReleased && s.gameYear === newDate.year && s.gameWeek === newDate.week).map((s: any) => ({
+            const onlineChartContenders = (!state.offlineMode && state.onlineSongs) ? state.onlineSongs.filter((s: any) => s.isReleased).map((s: any) => ({
                 uniqueId: s.id || crypto.randomUUID(), title: s.title, artist: s.artistName || 'Unknown Online Artist',
                 weeklyStreams: s.lastWeekStreams || 0,
                 isPlayerSong: false, // We treat them as non-player conceptually for UI highlighting unless it happens to be the player's own synced song via their ID
@@ -3530,8 +3561,8 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 coverArt: a.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.artistName || 'Unknown')}&background=random&color=fff&size=250`,
                 isPlayerAlbum: false,
                 albumId: a.id,
-                weeklyActivity: a.weeklyStreams || 0,
-                weeklySales: Math.floor((a.weeklyStreams || 0) / 1500),
+                weeklyActivity: a.weeklySales || 0,
+                weeklySales: a.weeklySales || 0,
             })) : [];
             
             // Remove any online albums that are actually the player's local albums to prevent duplicates
@@ -6796,9 +6827,9 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                  authorId: p.authorId,
                  authorName: p.authorName, // Custom field just for viewing
                  content: p.content,
-                 likes: Math.floor(Math.random() * 100),
-                 retweets: Math.floor(Math.random() * 20),
-                 views: Math.floor(Math.random() * 1000),
+                 likes: p.likes ?? Math.floor(Math.random() * 100),
+                 retweets: p.retweets ?? Math.floor(Math.random() * 20),
+                 views: p.views ?? Math.floor(Math.random() * 1000),
                  date: state.date, // maybe real timestamp is better
                  createdAt: p.createdAt,
              }));
