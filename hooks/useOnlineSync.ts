@@ -24,22 +24,20 @@ export const useOnlineSync = () => {
         }, (error) => console.error("Error syncing posts:", error));
 
         // Listen to songs (sort by lastWeekStreams)
-        const songsQuery = query(ref(db, 'songs'), orderByChild('lastWeekStreams'), limitToLast(50));
+        const songsQuery = query(ref(db, 'online_songs'), orderByChild('weeklyStreams'), limitToLast(100));
         const unsubSongs = onValue(songsQuery, (snapshot) => {
             let songs: any[] = [];
             if (snapshot.exists()) {
                 snapshot.forEach(child => {
                     const data = child.val();
-                    if ((!data.type || data.type === 'Single')) {
-                        songs.push({ id: child.key, ...data });
-                    }
+                    songs.push({ id: child.key, ...data, lastWeekStreams: data.weeklyStreams });
                 });
             }
             dispatch({ type: 'SYNC_ONLINE_SONGS', payload: songs.reverse() });
         }, (error) => console.error("Error syncing songs:", error));
         
         // Listen to albums
-        const albumsQuery = query(ref(db, 'albums'), orderByChild('weeklySales'), limitToLast(50));
+        const albumsQuery = query(ref(db, 'online_albums'), orderByChild('weeklySales'), limitToLast(50));
         const unsubAlbums = onValue(albumsQuery, (snapshot) => {
             let albums: any[] = [];
             if (snapshot.exists()) {

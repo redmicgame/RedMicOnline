@@ -1011,6 +1011,82 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 date: { year, week }
             };
         }
+        case 'INIT_CHARTS': {
+            if (state.offlineMode || !state.onlineSongs) return state;
+
+            const allContenders = state.onlineSongs.filter((s: any) => s.isReleased).map((s: any) => ({
+                uniqueId: s.id || crypto.randomUUID(), title: s.title, artist: s.artistName || 'Unknown Online Artist',
+                weeklyStreams: s.lastWeekStreams || 0,
+                isPlayerSong: false, 
+                coverArt: s.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.artistName || 'Unknown')}&background=random&color=fff&size=250`, songId: s.id,
+                genre: s.genre || 'Pop',
+            }));
+            
+            allContenders.sort((a, b) => b.weeklyStreams - a.weeklyStreams);
+            
+            const newBillboardHot100: ChartEntry[] = [];
+            const newChartHistory: ChartHistory = { ...state.chartHistory };
+            
+            const top100 = allContenders.slice(0, 100);
+            top100.forEach((song, index) => {
+                const rank = index + 1;
+                newChartHistory[song.uniqueId] = { weeksOnChart: 1, peak: rank, lastRank: rank, weeksAtNo1: rank === 1 ? 1 : 0 };
+                newBillboardHot100.push({
+                    rank: rank, lastWeek: null, peak: rank,
+                    weeksOnChart: 1, title: song.title, artist: song.artist,
+                    coverArt: song.coverArt, isPlayerSong: song.isPlayerSong, songId: song.songId,
+                    uniqueId: song.uniqueId, weeklyStreams: song.weeklyStreams,
+                });
+            });
+            
+            const onlineAlbumContenders = state.onlineAlbums ? state.onlineAlbums.map((a: any) => ({
+                uniqueId: a.id || crypto.randomUUID(),
+                title: a.title, artist: a.artistName || 'Unknown', label: a.releasingLabel?.name || 'Independent',
+                coverArt: a.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.artistName || 'Unknown')}&background=random&color=fff&size=250`,
+                isPlayerAlbum: false, albumId: a.id, weeklyActivity: a.weeklySales || 0, weeklySales: a.weeklySales || 0,
+            })) : [];
+            onlineAlbumContenders.sort((a, b) => b.weeklyActivity - a.weeklyActivity);
+            
+            const newBillboardTopAlbums: AlbumChartEntry[] = [];
+            const top50Albums = onlineAlbumContenders.slice(0, 50);
+            top50Albums.forEach((album, index) => {
+                newBillboardTopAlbums.push({
+                    rank: index + 1, lastWeek: null, peak: index + 1, weeksOnChart: 1,
+                    title: album.title, artist: album.artist, coverArt: album.coverArt,
+                    isPlayerAlbum: album.isPlayerAlbum, albumId: album.albumId, uniqueId: album.uniqueId,
+                    weeklyActivity: album.weeklyActivity, label: album.label || 'Independent'
+                });
+            });
+            
+            const { newChart: newHotPopSongs, newHistory: newHotPopSongsHistory } = calculateGenreChart(
+                allContenders, ['Pop'], state.hotPopSongs || [], state.hotPopSongsHistory || {}
+            );
+            const { newChart: newHotRapRnb, newHistory: newHotRapRnbHistory } = calculateGenreChart(
+                allContenders, ['Hip Hop', 'R&B'], state.hotRapRnb || [], state.hotRapRnbHistory || {}
+            );
+            const { newChart: newElectronicChart, newHistory: newElectronicChartHistory } = calculateGenreChart(
+                allContenders, ['Electronic'], state.electronicChart || [], state.electronicChartHistory || {}
+            );
+            const { newChart: newCountryChart, newHistory: newCountryChartHistory } = calculateGenreChart(
+                allContenders, ['Country'], state.countryChart || [], state.countryChartHistory || {}
+            );
+
+            return {
+                ...state,
+                billboardHot100: newBillboardHot100,
+                spotifyGlobal: newBillboardHot100,
+                chartHistory: newChartHistory,
+                billboardTopAlbums: newBillboardTopAlbums,
+                hotPopSongs: newHotPopSongs,
+                hotPopSongsHistory: newHotPopSongsHistory,
+                hotRapRnb: newHotRapRnb,
+                hotRapRnbHistory: newHotRapRnbHistory,
+                electronicChart: newElectronicChart,
+                electronicChartHistory: newElectronicChartHistory,
+                countryChart: newCountryChart,
+                countryChartHistory: newCountryChartHistory
+            };
+        }
         case 'PROGRESS_WEEK': {
             // NPC Churn Logic: Simulate new songs releasing
             let newNpcsList = [...state.npcs];
@@ -3312,46 +3388,64 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 itunesPrice: s.itunesPrice || 0.99
             })) : [];
 
-            // Remove any online songs that are actually the player's local songs to prevent duplicates
-            const filteredOnlineContenders = onlineChartContenders.filter(oc => !playerChartContenders.some(pc => pc.songId === oc.songId));
-            
-            const allContenders = [...playerChartContenders, ...npcChartContenders, ...filteredOnlineContenders];
-            allContenders.sort((a, b) => b.weeklyStreams - a.weeklyStreams);
+            let allContenders: any[] = [];
+            if (!state.offlineMode) {
+                // Online Mode: use ONLY online songs exactly as they are from the server.
+                allContenders = onlineChartContenders.map(oc => ({
+                    ...oc,
+                    isPlayerSong: playerChartContenders.some(pc => pc.songId === oc.songId)
+                }));
+                allContenders.sort((a, b) => b.weeklyStreams - a.weeklyStreams);
+            } else {
+                // Offline Mode: Combine and use local Math.random logic
+                const filteredOnlineContenders = onlineChartContenders.filter(oc => !playerChartContenders.some(pc => pc.songId === oc.songId));
+                allContenders = [...playerChartContenders, ...npcChartContenders, ...filteredOnlineContenders];
+                allContenders.sort((a, b) => b.weeklyStreams - a.weeklyStreams);
+            }
 
             const newChartHistory: ChartHistory = { ...state.chartHistory };
 
-            const hot100Contenders = allContenders.map(song => {
-                const hash = song.uniqueId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                const divisor = 750 + (hash % 250);
-                
-                let boost = 1;
-                if (song.isPlayerSong && song.songId) {
-                    for (const artistId in updatedArtistsData) {
-                        const aData = updatedArtistsData[artistId];
-                        const s = aData.songs.find(x => x.id === song.songId);
-                        if (s) {
-                            const pushWeek = aData.lastPushToItunesWeek;
-                            const currentWeek = newDate.year * 52 + newDate.week;
-                            if (aData.lastPushedSongId === song.songId && pushWeek && currentWeek - pushWeek <= 1) {
-                                boost = 5 + Math.random() * 5;
+            let hot100Contenders = [];
+            if (!state.offlineMode) {
+                // Online Mode: Purely stream-based hierarchy from the unified online state
+                hot100Contenders = allContenders.map(song => {
+                    return { ...song, hot100Points: song.weeklyStreams };
+                });
+            } else {
+                hot100Contenders = allContenders.map(song => {
+                    const hash = song.uniqueId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                    const divisor = 750 + (hash % 250);
+                    
+                    let boost = 1;
+                    if (song.isPlayerSong && song.songId) {
+                        for (const artistId in updatedArtistsData) {
+                            const aData = updatedArtistsData[artistId];
+                            const s = aData.songs.find(x => x.id === song.songId);
+                            if (s) {
+                                const pushWeek = aData.lastPushToItunesWeek;
+                                const currentWeek = newDate.year * 52 + newDate.week;
+                                if (aData.lastPushedSongId === song.songId && pushWeek && currentWeek - pushWeek <= 1) {
+                                    boost = (5 + Math.random() * 5);
+                                }
+                                if (s.itunesPrice === '$0.69') {
+                                    boost *= 2.5;
+                                } else if (s.itunesPrice === '$0.99') {
+                                    boost *= 1.5;
+                                } else if (s.itunesPrice === '$1.29') {
+                                    boost *= 0.9;
+                                }
+                                break;
                             }
-                            if (s.itunesPrice === '$0.69') {
-                                boost *= 2.5;
-                            } else if (s.itunesPrice === '$0.99') {
-                                boost *= 1.5;
-                            } else if (s.itunesPrice === '$1.29') {
-                                boost *= 0.9;
-                            }
-                            break;
                         }
                     }
-                }
-                const sales = Math.floor(song.weeklyStreams / divisor) * boost;
-                
-                const points = (song.weeklyStreams * 0.5) + (sales * 150 * 0.5);
-                
-                return { ...song, hot100Points: points };
-            });
+                    const sales = Math.floor(song.weeklyStreams / divisor) * boost;
+                    
+                    let points = (song.weeklyStreams * 0.5) + (sales * 150 * 0.5);
+                    points += (Math.random() * 20 - 10);
+                    
+                    return { ...song, hot100Points: points };
+                });
+            }
             hot100Contenders.sort((a, b) => b.hot100Points - a.hot100Points);
 
             const eligibleBillboardContenders = hot100Contenders.filter((song, index) => {
@@ -3563,10 +3657,16 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 weeklySales: a.weeklySales || 0,
             })) : [];
             
-            // Remove any online albums that are actually the player's local albums to prevent duplicates
-            const filteredOnlineAlbumContenders = onlineAlbumContenders.filter(oa => !playerAlbumContenders.some(pa => pa.albumId === oa.albumId));
-
-            const allAlbumContenders = [...playerAlbumContenders, ...npcAlbumContenders, ...filteredOnlineAlbumContenders];
+            let allAlbumContenders: any[] = [];
+            if (!state.offlineMode) {
+                allAlbumContenders = onlineAlbumContenders.map((oc: any) => ({
+                    ...oc,
+                    isPlayerAlbum: playerAlbumContenders.some(pa => pa.albumId === oc.albumId)
+                }));
+            } else {
+                const filteredOnlineAlbumContenders = onlineAlbumContenders.filter(oa => !playerAlbumContenders.some(pa => pa.albumId === oa.albumId));
+                allAlbumContenders = [...playerAlbumContenders, ...npcAlbumContenders, ...filteredOnlineAlbumContenders];
+            }
             allAlbumContenders.sort((a, b) => b.weeklyActivity - a.weeklyActivity);
 
             const top50Albums = allAlbumContenders.slice(0, 50);

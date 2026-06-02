@@ -16,7 +16,7 @@ async function run() {
     try {
         await signInAnonymously(auth);
         console.log("Clearing nodes...");
-        const nodes = ['artists', 'songs', 'albums', 'x_posts', 'x_trends', 'news'];
+        const nodes = ['artists', 'songs', 'albums', 'x_posts', 'x_trends', 'news', 'online_songs', 'online_albums'];
         for (const node of nodes) {
             await remove(ref(db, node));
             console.log("Cleared", node);

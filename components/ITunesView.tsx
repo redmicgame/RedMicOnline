@@ -86,7 +86,7 @@ const useItunesData = () => {
                         const pushWeek = aData.lastPushToItunesWeek;
                         const currentWeek = gameState.date.year * 52 + gameState.date.week;
                         if (aData.lastPushedSongId === entry.songId && pushWeek && currentWeek - pushWeek <= 1) {
-                            boost = 5 + Math.random() * 5; // massive boost
+                            boost = gameState.offlineMode ? (5 + Math.random() * 5) : 7.5; // massive boost
                         }
                         
                         break;
@@ -106,7 +106,7 @@ const useItunesData = () => {
             };
         }).sort((a, b) => b.sales - a.sales).slice(0, 100).map((song, index) => {
             // Give a baseline to sales to ensure the 100th song has 1k - 1.5k sales
-            const baselineSales = 1000 + Math.random() * 500 + ((100 - index) * 150);
+            const baselineSales = gameState.offlineMode ? (1000 + Math.random() * 500 + ((100 - index) * 150)) : (1250 + ((100 - index) * 150));
             return {
                 ...song,
                 sales: Math.max(song.sales, Math.floor(baselineSales)),
@@ -198,7 +198,7 @@ const useItunesData = () => {
                 sales,
             };
         }).sort((a, b) => b.sales - a.sales).slice(0, 100).map((album, index) => {
-            const baselineSales = 800 + Math.random() * 400 + ((100 - index) * 120);
+            const baselineSales = gameState.offlineMode ? (800 + Math.random() * 400 + ((100 - index) * 120)) : (1000 + ((100 - index) * 120));
             return {
                 ...album,
                 sales: Math.max(album.sales, Math.floor(baselineSales)),

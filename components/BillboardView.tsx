@@ -45,7 +45,7 @@ const ChartEntryItem: React.FC<{ entry: ChartEntry }> = ({ entry }) => {
                 const pushWeek = aData.lastPushToItunesWeek;
                 const currentWeek = gameState.date.year * 52 + gameState.date.week;
                 if (aData.lastPushedSongId === entry.songId && pushWeek && currentWeek - pushWeek <= 1) {
-                    boost = 5 + Math.random() * 5;
+                    boost = gameState.offlineMode ? (5 + Math.random() * 5) : 7.5;
                 }
                 break;
             }

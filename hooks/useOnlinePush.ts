@@ -52,15 +52,15 @@ export const useOnlinePush = () => {
                 // Push released songs
                 for (const song of artistData.songs) {
                     if (song.isReleased && !song.remixOfSongId) {
-                        await set(ref(db, `songs/${song.id}`), {
+                        await set(ref(db, `online_songs/${song.id}`), {
                             id: song.id,
                             artistId: artistProfile.id,
                             artistName: artistProfile.name,
                             title: song.title,
                             genre: song.genre,
                             coverArt: song.coverArt || null,
-                            lastWeekStreams: song.lastWeekStreams || 0,
-                            streams: song.streams || 0,
+                            weeklyStreams: song.lastWeekStreams || 0,
+                            allTimeStreams: song.streams || 0,
                             isReleased: true,
                             itunesPrice: song.itunesPrice || 0.99,
                             gameYear: currentYear,
@@ -73,7 +73,7 @@ export const useOnlinePush = () => {
                 // Push released albums
                 for (const release of artistData.releases) {
                     if ((release.type === 'Album' || release.type === 'EP') && release.isReleased) {
-                        await set(ref(db, `albums/${release.id}`), {
+                        await set(ref(db, `online_albums/${release.id}`), {
                             id: release.id,
                             artistId: artistProfile.id,
                             artistName: artistProfile.name,
