@@ -54,17 +54,21 @@ const GameUI: React.FC = () => {
             const globalWeekStamp = Math.floor(elapsedTime / tickRate) + 1;
 
             const localAbsoluteWeek = ((gameState.date.year - baseYear) * 52) + gameState.date.week;
+            const diff = globalWeekStamp - localAbsoluteWeek;
             
-            if (globalWeekStamp > localAbsoluteWeek) {
-                dispatch({ type: 'PROGRESS_WEEK' });
-            } else if (globalWeekStamp < localAbsoluteWeek) {
+            if (diff > 0) {
+                if (diff > 12) {
+                    dispatch({ type: 'SYNC_DATE', payload: globalWeekStamp });
+                } else {
+                    dispatch({ type: 'PROGRESS_WEEK' });
+                }
+            } else if (diff < 0) {
                 dispatch({ type: 'SYNC_DATE', payload: globalWeekStamp });
             }
         };
 
-        checkProgress();
-        const interval = setInterval(checkProgress, 5000); // Check every 5 seconds
-        return () => clearInterval(interval);
+        const timeout = setTimeout(checkProgress, 100);
+        return () => clearTimeout(timeout);
     }, [offlineMode, gameState.date.week, gameState.date.year, dispatch]);
 
     const formatTime = (ms: number) => {
