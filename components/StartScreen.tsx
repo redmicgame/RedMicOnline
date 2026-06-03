@@ -38,7 +38,7 @@ const StartScreen: React.FC = () => {
             const { ref, remove } = await import('firebase/database');
             const { db } = await import('../firebase');
             console.log("Wiping...");
-            const nodes = ['artists_v3', 'songs_v3', 'albums_v3', 'x_posts_v3', 'x_trends_v3', 'news_v3', 'online_songs_v3', 'online_albums_v3'];
+            const nodes = ['artists_v5', 'songs_v5', 'albums_v5', 'x_posts_v5', 'x_trends_v5', 'news_v5', 'online_songs_v5', 'online_albums_v5'];
             for (const node of nodes) {
                 await remove(ref(db, node));
             }

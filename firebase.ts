@@ -69,7 +69,7 @@ export const logout = async () => {
 
 export const saveOnlineGameState = async (userId: string, gameState: any) => {
     try {
-        const path = `saves_v3/${userId}`;
+        const path = `saves_v5/${userId}`;
         // Stripping out non-essential giant arrays if needed, but stringify full state usually fits in 16MB.
         // We do a JSON string to avoid structured overhead.
         const cleanState = { ...gameState, onlineSongs: [], onlineAlbums: [], onlineArtists: [], onlinePosts: [] };
@@ -81,7 +81,7 @@ export const saveOnlineGameState = async (userId: string, gameState: any) => {
 
 export const loadOnlineGameState = async (userId: string) => {
     try {
-        const path = `saves_v3/${userId}`;
+        const path = `saves_v5/${userId}`;
         const snapshot = await get(ref(db, path));
         if (snapshot.exists()) {
             return JSON.parse(snapshot.val());
@@ -115,7 +115,7 @@ export const getOrCreateUser = async (user: any) => {
 
 export const resumeOnlineArtist = async (userId: string, name: string, code?: string, forceSetInviteCode?: boolean) => {
     try {
-        const artistsRef = ref(db, 'artists_v3');
+        const artistsRef = ref(db, 'artists_v5');
         const snapshot = await get(artistsRef);
         let foundArtist: any = null;
         let foundArtistId: string = '';
@@ -132,7 +132,7 @@ export const resumeOnlineArtist = async (userId: string, name: string, code?: st
             if (!foundArtist.inviteCode && !forceSetInviteCode) {
                 throw new Error('NO_INVITE_CODE_SET');
             } else if (!foundArtist.inviteCode && forceSetInviteCode && code) {
-                await update(ref(db, `artists_v3/${foundArtistId}`), { inviteCode: code });
+                await update(ref(db, `artists_v5/${foundArtistId}`), { inviteCode: code });
                 foundArtist.inviteCode = code;
             } else if (foundArtist.inviteCode && foundArtist.inviteCode !== code) {
                 // If it doesn't match, verify if they already own it
@@ -165,7 +165,7 @@ export const resumeOnlineArtist = async (userId: string, name: string, code?: st
 
 export const resetProtectedOnlineArtist = async (userId: string, name: string, genre: string, code?: string) => {
     try {
-        const artistsRef = ref(db, 'artists_v3');
+        const artistsRef = ref(db, 'artists_v5');
         const snapshot = await get(artistsRef);
         let foundArtistId: string = '';
         if (snapshot.exists()) {
@@ -178,7 +178,7 @@ export const resetProtectedOnlineArtist = async (userId: string, name: string, g
         
         if (foundArtistId) {
             // Delete all songs and albums belonging to this artist
-            const songsRef = ref(db, 'online_songs_v3');
+            const songsRef = ref(db, 'online_songs_v5');
             const songsSnapshot = await get(songsRef);
             if (songsSnapshot.exists()) {
                 const songsUpdates: any = {};
@@ -192,7 +192,7 @@ export const resetProtectedOnlineArtist = async (userId: string, name: string, g
                 }
             }
 
-            const albumsRef = ref(db, 'online_albums_v3');
+            const albumsRef = ref(db, 'online_albums_v5');
             const albumsSnapshot = await get(albumsRef);
             if (albumsSnapshot.exists()) {
                 const albumsUpdates: any = {};
@@ -207,7 +207,7 @@ export const resetProtectedOnlineArtist = async (userId: string, name: string, g
             }
 
             // Delete artist entirely
-            await set(ref(db, `artists_v3/${foundArtistId}`), null);
+            await set(ref(db, `artists_v5/${foundArtistId}`), null);
         }
 
         // Now recreate it with a fresh ID
@@ -224,7 +224,7 @@ export const createOnlineArtist = async (userId: string, name: string, genre: st
             throw new Error(`The name "${name}" is reserved. You must enter a valid invite code to use it.`);
         }
 
-        const artistsRef = ref(db, 'artists_v3');
+        const artistsRef = ref(db, 'artists_v5');
         const snapshot = await get(artistsRef);
         if (snapshot.exists()) {
             let nameTaken = false;
@@ -240,7 +240,7 @@ export const createOnlineArtist = async (userId: string, name: string, genre: st
     }
 
     const artistId = `artist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const path = `artists_v3/${artistId}`;
+    const path = `artists_v5/${artistId}`;
     try {
         const newArtist = {
             ownerId: userId,
@@ -288,7 +288,7 @@ export const getArtistData = async (artistId: string) => {
 
 export const updateOnlineArtistProfileImage = async (artistId: string, image: string) => {
     try {
-        const artistRef = ref(db, `artists_v3/${artistId}`);
+        const artistRef = ref(db, `artists_v5/${artistId}`);
         const snapshot = await get(artistRef);
         if (snapshot.exists()) {
             await set(artistRef, {
@@ -304,7 +304,7 @@ export const updateOnlineArtistProfileImage = async (artistId: string, image: st
 
 export const updateOnlineArtistName = async (artistId: string, name: string) => {
     try {
-        const artistRef = ref(db, `artists_v3/${artistId}`);
+        const artistRef = ref(db, `artists_v5/${artistId}`);
         const snapshot = await get(artistRef);
         if (snapshot.exists()) {
             await set(artistRef, {
@@ -320,7 +320,7 @@ export const updateOnlineArtistName = async (artistId: string, name: string) => 
 
 export const updateOnlineArtistFeaturePrice = async (artistId: string, price: number) => {
     try {
-        const artistRef = ref(db, `artists_v3/${artistId}`);
+        const artistRef = ref(db, `artists_v5/${artistId}`);
         const snapshot = await get(artistRef);
         if (snapshot.exists()) {
             await set(artistRef, {
@@ -336,7 +336,7 @@ export const updateOnlineArtistFeaturePrice = async (artistId: string, price: nu
 
 export const getAllOnlineArtists = async () => {
     try {
-        const artistsRef = ref(db, 'artists_v3');
+        const artistsRef = ref(db, 'artists_v5');
         const snapshot = await get(artistsRef);
         const artists: any[] = [];
         if (snapshot.exists()) {
@@ -404,9 +404,9 @@ export const saveGameToCloud = async (userId: string, saveId: string | null, gam
 // X posts
 export const publishXPost = async (authorId: string, authorName: string, text: string, postId?: string) => {
     try {
-        const actualPostId = postId || push(ref(db, 'x_posts_v3')).key;
+        const actualPostId = postId || push(ref(db, 'x_posts_v5')).key;
         if (!actualPostId) return;
-        const postsRef = ref(db, `x_posts_v3/${actualPostId}`);
+        const postsRef = ref(db, `x_posts_v5/${actualPostId}`);
         await set(postsRef, {
             id: actualPostId,
             authorId,
@@ -537,7 +537,7 @@ export const updateFeatureRequestStatus = async (requestId: string, status: 'acc
 
 export const publishOnlineSong = async (artistId: string, artistName: string, songId: string, title: string, quality: number, genre: string) => {
     try {
-        await set(ref(db, `online_songs_v3/${songId}`), {
+        await set(ref(db, `online_songs_v5/${songId}`), {
             artistId,
             artistName,
             title,
@@ -548,13 +548,13 @@ export const publishOnlineSong = async (artistId: string, artistName: string, so
             createdAt: Date.now()
         });
     } catch(err) {
-        handleFirestoreError(err, OperationType.WRITE, 'online_songs_v3');
+        handleFirestoreError(err, OperationType.WRITE, 'online_songs_v5');
     }
 };
 
 export const updateOnlineSongStreams = async (songId: string, allTimeStreams: number, weeklyStreams: number) => {
     try {
-        const songRef = ref(db, `online_songs_v3/${songId}`);
+        const songRef = ref(db, `online_songs_v5/${songId}`);
         const snapshot = await get(songRef);
         if (snapshot.exists()) {
             await set(songRef, {
@@ -565,13 +565,13 @@ export const updateOnlineSongStreams = async (songId: string, allTimeStreams: nu
             });
         }
     } catch(err) {
-        handleFirestoreError(err, OperationType.WRITE, 'online_songs_v3');
+        handleFirestoreError(err, OperationType.WRITE, 'online_songs_v5');
     }
 };
 
 export const getOnlineSpotifySongsChart = async () => {
     try {
-        const snapshot = await get(ref(db, 'online_songs_v3'));
+        const snapshot = await get(ref(db, 'online_songs_v5'));
         let songs: any[] = [];
         if (snapshot.exists()) {
             snapshot.forEach(childSnapshot => {
@@ -582,14 +582,14 @@ export const getOnlineSpotifySongsChart = async () => {
         }
         return songs;
     } catch(err) {
-        handleFirestoreError(err, OperationType.LIST, 'online_songs_v3');
+        handleFirestoreError(err, OperationType.LIST, 'online_songs_v5');
         return [];
     }
 };
 
 export const publishOnlineAlbum = async (artistId: string, artistName: string, albumId: string, title: string, type: string) => {
     try {
-        await set(ref(db, `online_albums_v3/${albumId}`), {
+        await set(ref(db, `online_albums_v5/${albumId}`), {
             artistId,
             artistName,
             title,
@@ -599,13 +599,13 @@ export const publishOnlineAlbum = async (artistId: string, artistName: string, a
             createdAt: Date.now()
         });
     } catch(err) {
-        handleFirestoreError(err, OperationType.WRITE, 'online_albums_v3');
+        handleFirestoreError(err, OperationType.WRITE, 'online_albums_v5');
     }
 };
 
 export const updateOnlineAlbumStreams = async (albumId: string, allTimeStreams: number, weeklyStreams: number) => {
     try {
-        const albumRef = ref(db, `online_albums_v3/${albumId}`);
+        const albumRef = ref(db, `online_albums_v5/${albumId}`);
         const snapshot = await get(albumRef);
         if (snapshot.exists()) {
             await set(albumRef, {
@@ -616,13 +616,13 @@ export const updateOnlineAlbumStreams = async (albumId: string, allTimeStreams: 
             });
         }
     } catch(err) {
-        handleFirestoreError(err, OperationType.WRITE, 'online_albums_v3');
+        handleFirestoreError(err, OperationType.WRITE, 'online_albums_v5');
     }
 };
 
 export const getOnlineSpotifyAlbumsChart = async () => {
     try {
-        const snapshot = await get(ref(db, 'online_albums_v3'));
+        const snapshot = await get(ref(db, 'online_albums_v5'));
         let albums: any[] = [];
         if (snapshot.exists()) {
             snapshot.forEach(childSnapshot => {
@@ -633,7 +633,7 @@ export const getOnlineSpotifyAlbumsChart = async () => {
         }
         return albums;
     } catch(err) {
-        handleFirestoreError(err, OperationType.LIST, 'online_albums_v3');
+        handleFirestoreError(err, OperationType.LIST, 'online_albums_v5');
         return [];
     }
 };

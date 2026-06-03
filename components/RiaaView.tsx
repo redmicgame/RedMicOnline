@@ -364,7 +364,7 @@ const RiaaView: React.FC = () => {
                 if (activeArtistData && activeArtistData.releases.some(r => r.id === album.id)) return;
 
                 // Here we actually don't have allTimeStreams for albums easily without iterating songs.
-                // However, online_albums_v3 might not have songIds. But if the game computes pure sales directly from `album.allTimeSales` we could use that. Let's do a fallback:
+                // However, online_albums_v5 might not have songIds. But if the game computes pure sales directly from `album.allTimeSales` we could use that. Let's do a fallback:
                 // We'll compute it from online_songs if they match artistId and album... wait, online_songs don't store albumId.
                 // Let's use `weeklySales` as proxy or a pseudo random based on popularity. Wait, some onlineAlbums might have `weeklySales`. 
                 // To keep it simple, we use a deterministic mock based on Title for now since V3 doesn't track allTime sales for albums perfectly online.
