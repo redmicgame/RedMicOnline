@@ -87,13 +87,17 @@ export const useOnlinePush = () => {
                 // Push released albums
                 for (const release of artistData.releases) {
                     if ((release.type === 'Album' || release.type === 'EP') && release.isReleased) {
+                        const albumChartEntry = gameState.billboardTopAlbums?.find(a => a.albumId === release.id);
+                        const weeklyActivity = albumChartEntry ? albumChartEntry.weeklyActivity : 0;
+                        const weeklySalesNum = albumChartEntry ? (albumChartEntry.weeklySales || 0) : 0;
+
                         await set(ref(db, `online_albums_v3/${release.id}`), {
                             id: release.id,
                             artistId: artistProfile.id,
                             artistName: artistProfile.name,
                             title: release.title,
                             coverArt: release.coverArt || null,
-                            weeklySales: release.sales || 0,
+                            weeklySales: weeklyActivity, // In DB, we use weeklySales to sort, so let's push weeklyActivity to it so we sort by activity
                             releasingLabel: release.releasingLabel ? { name: release.releasingLabel.name } : null,
                             gameYear: currentYear,
                             gameWeek: currentWeek,

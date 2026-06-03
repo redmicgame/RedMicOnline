@@ -1062,7 +1062,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 };
             }) : [];
             
-            const allInitialAlbums = [...npcAlbumContenders, ...onlineAlbumContenders];
+            const allInitialAlbums = state.offlineMode ? [...npcAlbumContenders, ...onlineAlbumContenders] : [...onlineAlbumContenders];
             allInitialAlbums.sort((a, b) => b.weeklyActivity - a.weeklyActivity);
 
             const newBillboardTopAlbums: AlbumChartEntry[] = [];
@@ -3673,7 +3673,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             let allAlbumContenders: any[] = [];
             if (!state.offlineMode) {
                 const filteredOnlineAlbumContenders = onlineAlbumContenders.filter(oa => !playerAlbumContenders.some(pa => pa.albumId === oa.albumId));
-                allAlbumContenders = [...playerAlbumContenders, ...npcAlbumContenders, ...filteredOnlineAlbumContenders];
+                allAlbumContenders = [...playerAlbumContenders, ...filteredOnlineAlbumContenders];
             } else {
                 const filteredOnlineAlbumContenders = onlineAlbumContenders.filter(oa => !playerAlbumContenders.some(pa => pa.albumId === oa.albumId));
                 allAlbumContenders = [...playerAlbumContenders, ...npcAlbumContenders, ...filteredOnlineAlbumContenders];
