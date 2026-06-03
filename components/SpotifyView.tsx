@@ -144,12 +144,15 @@ const SpotifyView: React.FC = () => {
                 dispatch({ type: 'UPDATE_ARTIST_IMAGE', payload: { artistId: activeArtist.id, newImage } });
                 dispatch({ type: 'CHANGE_PROFILE_IMAGE', payload: { newImage } });
                 
-                if (gameState.careerMode === 'online' && newImage.length < 500) {
-                    try {
-                        const { updateOnlineArtistProfileImage } = await import('../firebase');
-                        await updateOnlineArtistProfileImage(activeArtist.id, newImage);
-                    } catch(err) {
-                        console.error('Failed to push to firebase', err);
+                if (gameState.careerMode === 'online') {
+                    // Try to push if it's external, otherwise local is fine.
+                    if (newImage.startsWith('http') || newImage.length < 500) {
+                        try {
+                            const { updateOnlineArtistProfileImage } = await import('../firebase');
+                            await updateOnlineArtistProfileImage(activeArtist.id, newImage);
+                        } catch(err) {
+                            console.error('Failed to push to firebase', err);
+                        }
                     }
                 }
             };

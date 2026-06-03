@@ -1017,13 +1017,24 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
         case 'INIT_CHARTS': {
             if (state.offlineMode || !state.onlineSongs) return state;
 
-            const allContenders = state.onlineSongs.filter((s: any) => s.isReleased).map((s: any) => ({
+            const npcChartContenders = state.npcs ? state.npcs.map((npc) => {
+                return {
+                    uniqueId: npc.uniqueId, title: npc.title, artist: npc.artist,
+                    coverArt: npc.coverArt, isPlayerSong: false, songId: npc.uniqueId,
+                    weeklyStreams: Math.floor(npc.basePopularity * (Math.random() * 0.4 + 0.8)),
+                    genre: npc.genre || 'Pop'
+                };
+            }) : [];
+
+            const onlineContenders = state.onlineSongs.filter((s: any) => s.isReleased).map((s: any) => ({
                 uniqueId: s.id || crypto.randomUUID(), title: s.title, artist: s.artistName || 'Unknown Online Artist',
                 weeklyStreams: s.lastWeekStreams || 0,
                 isPlayerSong: false, 
                 coverArt: s.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.artistName || 'Unknown')}&background=random&color=fff&size=250`, songId: s.id,
                 genre: s.genre || 'Pop',
             }));
+
+            const allContenders = [...npcChartContenders, ...onlineContenders];
             
             allContenders.sort((a, b) => b.weeklyStreams - a.weeklyStreams);
             
@@ -1062,7 +1073,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 };
             }) : [];
             
-            const allInitialAlbums = state.offlineMode ? [...npcAlbumContenders, ...onlineAlbumContenders] : [...onlineAlbumContenders];
+            const allInitialAlbums = state.offlineMode ? [...npcAlbumContenders, ...onlineAlbumContenders] : [...npcAlbumContenders, ...onlineAlbumContenders];
             allInitialAlbums.sort((a, b) => b.weeklyActivity - a.weeklyActivity);
 
             const newBillboardTopAlbums: AlbumChartEntry[] = [];
@@ -3674,7 +3685,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             let allAlbumContenders: any[] = [];
             if (!state.offlineMode) {
                 const filteredOnlineAlbumContenders = onlineAlbumContenders.filter(oa => !playerAlbumContenders.some(pa => pa.albumId === oa.albumId));
-                allAlbumContenders = [...playerAlbumContenders, ...filteredOnlineAlbumContenders];
+                allAlbumContenders = [...playerAlbumContenders, ...npcAlbumContenders, ...filteredOnlineAlbumContenders];
             } else {
                 const filteredOnlineAlbumContenders = onlineAlbumContenders.filter(oa => !playerAlbumContenders.some(pa => pa.albumId === oa.albumId));
                 allAlbumContenders = [...playerAlbumContenders, ...npcAlbumContenders, ...filteredOnlineAlbumContenders];
@@ -3915,12 +3926,12 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             }
             
             // Week 5: Determine Oscar Nominations
-            if (newDate.week === 5 && state.oscarSubmissions.length > 0) {
+            if (newDate.week === 5) {
                 const categoryName = 'Best Original Song';
                 const contenders: OscarContender[] = [];
 
                 // Player contenders
-                for (const sub of state.oscarSubmissions) {
+                for (const sub of (state.oscarSubmissions || [])) {
                     const artistData = updatedArtistsData[sub.artistId];
                     const artistProfile = allPlayerArtistsAndGroups.find(a => a.id === sub.artistId);
                     const song = artistData.songs.find(s => s.id === sub.itemId);
@@ -4138,7 +4149,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             let newAmaNominations: GameState['amaCurrentYearNominations'] = state.amaCurrentYearNominations;
             
             // Week 23: Determine AMA Nominations
-            if (newDate.week === 23 && state.amaSubmissions && state.amaSubmissions.length > 0) {
+            if (newDate.week === 23) {
                 const newNominations: AmaCategory[] = [];
                 const amaCategories: AmaCategoryName[] = [
                     'Artist of the Year', 'New Artist of the Year', 'Album of the Year', 'Song of the Year', 'Music Video of the Year',
@@ -4170,7 +4181,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     if (categoryName.includes('Rock')) genreFilter = 'Rock';
                     if (categoryName.includes('Dance/Electronic')) genreFilter = 'Dance/Electronic';
 
-                    const playerSubmissions = state.amaSubmissions.filter(s => s.category === categoryName);
+                    const playerSubmissions = (state.amaSubmissions || []).filter(s => s.category === categoryName);
                     for (const sub of playerSubmissions) {
                         const artistData = updatedArtistsData[sub.artistId];
                         const artistProfile = allPlayerArtistsAndGroups.find(a => a.id === sub.artistId);
@@ -4305,7 +4316,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             let newGrammyNominations: GameState['grammyCurrentYearNominations'] = state.grammyCurrentYearNominations;
             
             // Week 45: Determine Grammy Nominations
-            if (newDate.week === 45 && state.grammySubmissions.length > 0) {
+            if (newDate.week === 45) {
                 const newNominations: GrammyCategory[] = [];
                 const categories: GrammyAward['category'][] = [
                     'Record of the Year', 'Song of the Year', 'Album of the Year', 'Best New Artist',
@@ -4333,7 +4344,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                             break;
                     }
 
-                    const playerSubmissions = state.grammySubmissions.filter(s => s.category === categoryName);
+                    const playerSubmissions = (state.grammySubmissions || []).filter(s => s.category === categoryName);
                     for (const sub of playerSubmissions) {
                         const artistData = updatedArtistsData[sub.artistId];
                         const artistProfile = allPlayerArtistsAndGroups.find(a => a.id === sub.artistId);
@@ -8209,6 +8220,10 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     updatedKids[kidIndex] = { ...updatedKids[kidIndex], image: newImage };
                     newState.extraPlayableArtists = updatedKids;
                 }
+            }
+
+            if (newState.onlineArtist?.id === artistId) {
+                newState.onlineArtist = { ...newState.onlineArtist, image: newImage };
             }
 
             // Update XUser avatar in the corresponding artistsData

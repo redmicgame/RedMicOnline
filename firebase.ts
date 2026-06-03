@@ -123,6 +123,60 @@ export const resumeOnlineArtist = async (userId: string, name: string) => {
     }
 }
 
+export const resetProtectedOnlineArtist = async (userId: string, name: string, genre: string, code?: string) => {
+    try {
+        const artistsRef = ref(db, 'artists_v3');
+        const snapshot = await get(artistsRef);
+        let foundArtistId: string = '';
+        if (snapshot.exists()) {
+            snapshot.forEach((child) => {
+                if (child.val().name === name) {
+                    foundArtistId = child.key as string;
+                }
+            });
+        }
+        
+        if (foundArtistId) {
+            // Delete all songs and albums belonging to this artist
+            const songsRef = ref(db, 'online_songs_v3');
+            const songsSnapshot = await get(songsRef);
+            if (songsSnapshot.exists()) {
+                const songsUpdates: any = {};
+                songsSnapshot.forEach((child) => {
+                    if (child.val().artistName === name || child.val().artistId === foundArtistId) {
+                        songsUpdates[child.key as string] = null;
+                    }
+                });
+                if (Object.keys(songsUpdates).length > 0) {
+                    await update(songsRef, songsUpdates);
+                }
+            }
+
+            const albumsRef = ref(db, 'online_albums_v3');
+            const albumsSnapshot = await get(albumsRef);
+            if (albumsSnapshot.exists()) {
+                const albumsUpdates: any = {};
+                albumsSnapshot.forEach((child) => {
+                    if (child.val().artistName === name || child.val().artistId === foundArtistId) {
+                        albumsUpdates[child.key as string] = null;
+                    }
+                });
+                if (Object.keys(albumsUpdates).length > 0) {
+                    await update(albumsRef, albumsUpdates);
+                }
+            }
+
+            // Delete artist entirely
+            await set(ref(db, `artists_v3/${foundArtistId}`), null);
+        }
+
+        // Now recreate it with a fresh ID
+        return await createOnlineArtist(userId, name, genre, code);
+    } catch (err: any) {
+        throw new Error(err.message);
+    }
+}
+
 export const createOnlineArtist = async (userId: string, name: string, genre: string, code?: string) => {
     try {
         const uppercaseName = name.toUpperCase();

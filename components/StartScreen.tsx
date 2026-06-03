@@ -121,17 +121,10 @@ const StartScreen: React.FC = () => {
         setIsLoading(true);
         try {
             if (lockedArtists[trimmedName]) {
-                const { resumeOnlineArtist, createOnlineArtist } = await import('../firebase');
-                try {
-                    const existingArtist = await resumeOnlineArtist(user.uid, trimmedName);
-                    if (existingArtist) {
-                        dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: existingArtist } });
-                    }
-                } catch (resumeErr) {
-                    const newArtist = await createOnlineArtist(user.uid, trimmedName, onlineGenre.trim(), inviteCode.trim());
-                    if (newArtist) {
-                        dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: newArtist } });
-                    }
+                const { resetProtectedOnlineArtist } = await import('../firebase');
+                const newArtist = await resetProtectedOnlineArtist(user.uid, trimmedName, onlineGenre.trim(), inviteCode.trim());
+                if (newArtist) {
+                    dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: newArtist } });
                 }
             } else {
                 const { createOnlineArtist, resumeOnlineArtist } = await import('../firebase');
