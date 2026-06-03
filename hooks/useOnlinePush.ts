@@ -52,7 +52,7 @@ export const useOnlinePush = () => {
                 // Push released songs
                 for (const song of artistData.songs) {
                     if (song.isReleased && !song.remixOfSongId) {
-                        await set(ref(db, `online_songs/${song.id}`), {
+                        await set(ref(db, `online_songs_v2/${song.id}`), {
                             id: song.id,
                             artistId: artistProfile.id,
                             artistName: artistProfile.name,
@@ -73,7 +73,7 @@ export const useOnlinePush = () => {
                 // Push released albums
                 for (const release of artistData.releases) {
                     if ((release.type === 'Album' || release.type === 'EP') && release.isReleased) {
-                        await set(ref(db, `online_albums/${release.id}`), {
+                        await set(ref(db, `online_albums_v2/${release.id}`), {
                             id: release.id,
                             artistId: artistProfile.id,
                             artistName: artistProfile.name,

@@ -46,7 +46,7 @@ const CreateFallonInterviewView: React.FC = () => {
             return;
         }
 
-        const description = `${activeArtist.name} sits down with Jimmy Fallon to talk about their new ${release.type.toLowerCase().replace(" (deluxe)", "")} "${release.title}", their creative process, and what's next for their career.`;
+        const description = `${activeArtist.name} sits down with Jimmy Fallon to talk about their new ${release.type.toLowerCase().replace(" (deluxe)", "").replace(" (deluxe)", "")} "${release.title}", their creative process, and what's next for their career.`;
 
         const newVideo: Video = {
             id: crypto.randomUUID(),

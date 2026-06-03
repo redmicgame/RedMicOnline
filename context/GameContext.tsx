@@ -7171,6 +7171,29 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 spotifyPlaylists: mergedPlaylists,
                 difficultyMode: action.payload.difficultyMode || 'normal',
             };
+            
+            if (newState.careerMode === 'online' && !newState.migratedV2Streams) {
+                if (newState.artistsData) {
+                    for (const id in newState.artistsData) {
+                        const data = newState.artistsData[id];
+                        if (data.songs) {
+                            data.songs.forEach((s: any) => {
+                                s.streams = 0;
+                                s.lastWeekStreams = 0;
+                                s.basePopularity = Math.min(s.basePopularity, 100); 
+                            });
+                        }
+                        if (data.releases) {
+                            data.releases.forEach((r: any) => {
+                                r.sales = 0;
+                                r.weeklySales = 0;
+                            });
+                        }
+                    }
+                }
+                newState.migratedV2Streams = true;
+            }
+
             if (newState.artistsData) {
                 for (const id in newState.artistsData) {
                     const data = newState.artistsData[id];

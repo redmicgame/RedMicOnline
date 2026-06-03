@@ -111,7 +111,7 @@ const WikipediaView: React.FC = () => {
                         projectNumberString += `, marking a comeback after a ${yearsBetween}-year hiatus`;
                     }
                 }
-                projectNumberString += ` studio ${release.type.toLowerCase().replace(" (deluxe)", "")}`;
+                projectNumberString += ` studio ${release.type.toLowerCase().replace(" (deluxe)", "").replace(" (deluxe)", "")}`;
 
                 const controversies: string[] = [];
                 const fraudulentStreams = releaseSongs.reduce((sum, s) => sum + (s.removedStreams || 0), 0);
@@ -121,7 +121,7 @@ const WikipediaView: React.FC = () => {
 
                 let newSummary = '';
                 if (gameState.offlineMode || !activeArtistData?.redMicPro?.unlocked) {
-                    newSummary = `"${release.title}" is the ${projectNumberString} by ${artist.name}. Released on ${formatGameDate(release.releaseDate)} ${labelInfo}, the ${release.type.toLowerCase().replace(" (deluxe)", "")} contains ${releaseSongs.length} tracks. ${features.size > 0 ? `It features guest appearances by ${Array.from(features).join(', ')}.` : ''} ${singles.length > 0 ? `The release was supported by the singles ${singles.map(s => `"${s.title}"`).join(', ')}.` : ''}`;
+                    newSummary = `"${release.title}" is the ${projectNumberString} by ${artist.name}. Released on ${formatGameDate(release.releaseDate)} ${labelInfo}, the ${release.type.toLowerCase().replace(" (deluxe)", "").replace(" (deluxe)", "")} contains ${releaseSongs.length} tracks. ${features.size > 0 ? `It features guest appearances by ${Array.from(features).join(', ')}.` : ''} ${singles.length > 0 ? `The release was supported by the singles ${singles.map(s => `"${s.title}"`).join(', ')}.` : ''}`;
                 } else {
                     const prompt = `You are a music historian writing a Wikipedia article. Write a lead section for the album "${release.title}" by artist "${artist.name}".
 It is their ${projectNumberString}. It was released on ${formatGameDate(release.releaseDate)} ${labelInfo}.

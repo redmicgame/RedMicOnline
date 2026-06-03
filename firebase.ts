@@ -406,7 +406,7 @@ export const updateFeatureRequestStatus = async (requestId: string, status: 'acc
 
 export const publishOnlineSong = async (artistId: string, artistName: string, songId: string, title: string, quality: number, genre: string) => {
     try {
-        await set(ref(db, `online_songs/${songId}`), {
+        await set(ref(db, `online_songs_v2/${songId}`), {
             artistId,
             artistName,
             title,
@@ -417,13 +417,13 @@ export const publishOnlineSong = async (artistId: string, artistName: string, so
             createdAt: Date.now()
         });
     } catch(err) {
-        handleFirestoreError(err, OperationType.WRITE, 'online_songs');
+        handleFirestoreError(err, OperationType.WRITE, 'online_songs_v2');
     }
 };
 
 export const updateOnlineSongStreams = async (songId: string, allTimeStreams: number, weeklyStreams: number) => {
     try {
-        const songRef = ref(db, `online_songs/${songId}`);
+        const songRef = ref(db, `online_songs_v2/${songId}`);
         const snapshot = await get(songRef);
         if (snapshot.exists()) {
             await set(songRef, {
@@ -434,13 +434,13 @@ export const updateOnlineSongStreams = async (songId: string, allTimeStreams: nu
             });
         }
     } catch(err) {
-        handleFirestoreError(err, OperationType.WRITE, 'online_songs');
+        handleFirestoreError(err, OperationType.WRITE, 'online_songs_v2');
     }
 };
 
 export const getOnlineSpotifySongsChart = async () => {
     try {
-        const snapshot = await get(ref(db, 'online_songs'));
+        const snapshot = await get(ref(db, 'online_songs_v2'));
         let songs: any[] = [];
         if (snapshot.exists()) {
             snapshot.forEach(childSnapshot => {
@@ -451,14 +451,14 @@ export const getOnlineSpotifySongsChart = async () => {
         }
         return songs;
     } catch(err) {
-        handleFirestoreError(err, OperationType.LIST, 'online_songs');
+        handleFirestoreError(err, OperationType.LIST, 'online_songs_v2');
         return [];
     }
 };
 
 export const publishOnlineAlbum = async (artistId: string, artistName: string, albumId: string, title: string, type: string) => {
     try {
-        await set(ref(db, `online_albums/${albumId}`), {
+        await set(ref(db, `online_albums_v2/${albumId}`), {
             artistId,
             artistName,
             title,
@@ -468,13 +468,13 @@ export const publishOnlineAlbum = async (artistId: string, artistName: string, a
             createdAt: Date.now()
         });
     } catch(err) {
-        handleFirestoreError(err, OperationType.WRITE, 'online_albums');
+        handleFirestoreError(err, OperationType.WRITE, 'online_albums_v2');
     }
 };
 
 export const updateOnlineAlbumStreams = async (albumId: string, allTimeStreams: number, weeklyStreams: number) => {
     try {
-        const albumRef = ref(db, `online_albums/${albumId}`);
+        const albumRef = ref(db, `online_albums_v2/${albumId}`);
         const snapshot = await get(albumRef);
         if (snapshot.exists()) {
             await set(albumRef, {
@@ -485,13 +485,13 @@ export const updateOnlineAlbumStreams = async (albumId: string, allTimeStreams: 
             });
         }
     } catch(err) {
-        handleFirestoreError(err, OperationType.WRITE, 'online_albums');
+        handleFirestoreError(err, OperationType.WRITE, 'online_albums_v2');
     }
 };
 
 export const getOnlineSpotifyAlbumsChart = async () => {
     try {
-        const snapshot = await get(ref(db, 'online_albums'));
+        const snapshot = await get(ref(db, 'online_albums_v2'));
         let albums: any[] = [];
         if (snapshot.exists()) {
             snapshot.forEach(childSnapshot => {
@@ -502,7 +502,7 @@ export const getOnlineSpotifyAlbumsChart = async () => {
         }
         return albums;
     } catch(err) {
-        handleFirestoreError(err, OperationType.LIST, 'online_albums');
+        handleFirestoreError(err, OperationType.LIST, 'online_albums_v2');
         return [];
     }
 };

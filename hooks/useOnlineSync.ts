@@ -24,7 +24,7 @@ export const useOnlineSync = () => {
         }, (error) => console.error("Error syncing posts:", error));
 
         // Listen to songs (sort by lastWeekStreams)
-        const songsQuery = query(ref(db, 'online_songs'), orderByChild('weeklyStreams'), limitToLast(100));
+        const songsQuery = query(ref(db, 'online_songs_v2'), orderByChild('weeklyStreams'), limitToLast(100));
         const unsubSongs = onValue(songsQuery, (snapshot) => {
             let songs: any[] = [];
             if (snapshot.exists()) {
@@ -37,7 +37,7 @@ export const useOnlineSync = () => {
         }, (error) => console.error("Error syncing songs:", error));
         
         // Listen to albums
-        const albumsQuery = query(ref(db, 'online_albums'), orderByChild('weeklySales'), limitToLast(50));
+        const albumsQuery = query(ref(db, 'online_albums_v2'), orderByChild('weeklySales'), limitToLast(50));
         const unsubAlbums = onValue(albumsQuery, (snapshot) => {
             let albums: any[] = [];
             if (snapshot.exists()) {
