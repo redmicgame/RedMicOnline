@@ -10,7 +10,7 @@ class RedMicDexie extends Dexie {
   saves!: Table<GameSave, number>; 
 
   constructor() {
-    super('red-mic-game');
+    super('red-mic-v3');
     this.version(1).stores({
       saves: '++id', // Primary key auto-incrementing
     });

@@ -35,7 +35,7 @@ export const useOnlinePush = () => {
                 if (!artistProfile) return;
 
                 // Push artist entity
-                await set(ref(db, `artists_v2/${artistProfile.id}`), {
+                await set(ref(db, `artists_v3/${artistProfile.id}`), {
                     id: artistProfile.id,
                     name: artistProfile.name,
                     age: 'age' in artistProfile ? artistProfile.age : 20,
@@ -52,7 +52,7 @@ export const useOnlinePush = () => {
                 // Push released songs
                 for (const song of artistData.songs) {
                     if (song.isReleased && !song.remixOfSongId) {
-                        await set(ref(db, `online_songs_v2/${song.id}`), {
+                        await set(ref(db, `online_songs_v3/${song.id}`), {
                             id: song.id,
                             artistId: artistProfile.id,
                             artistName: artistProfile.name,
@@ -73,7 +73,7 @@ export const useOnlinePush = () => {
                 // Push released albums
                 for (const release of artistData.releases) {
                     if ((release.type === 'Album' || release.type === 'EP') && release.isReleased) {
-                        await set(ref(db, `online_albums_v2/${release.id}`), {
+                        await set(ref(db, `online_albums_v3/${release.id}`), {
                             id: release.id,
                             artistId: artistProfile.id,
                             artistName: artistProfile.name,
