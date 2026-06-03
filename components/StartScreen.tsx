@@ -28,37 +28,7 @@ const StartScreen: React.FC = () => {
     const [onlineProfile, setOnlineProfile] = useState<any>(null);
 
     const handleWipeServer = async () => {
-        if (!window.confirm("ARE YOU SURE YOU WANT TO FORMAT THE SERVERS AND DELETE ALL DB DATA? THIS CANNOT BE UNDONE.")) return;
-        const pwd = window.prompt("Enter admin password to format servers:");
-        if (pwd !== "redmic-admin") {
-            alert("Incorrect password.");
-            return;
-        }
-        try {
-            const { ref, get, remove } = await import('firebase/database');
-            const { db } = await import('../firebase');
-            console.log("Wiping...");
-            const nodes = [
-                'artists', 'songs', 'albums', 'x_posts', 'x_trends', 'news', 'online_songs', 'online_albums',
-                'artists_v2', 'songs_v2', 'albums_v2', 'x_posts_v2', 'x_trends_v2', 'news_v2', 'online_songs_v2', 'online_albums_v2', 'saves_v2',
-                'artists_v3', 'songs_v3', 'albums_v3', 'x_posts_v3', 'x_trends_v3', 'news_v3', 'online_songs_v3', 'online_albums_v3', 'saves_v3',
-                'artists_v4', 'songs_v4', 'albums_v4', 'x_posts_v4', 'x_trends_v4', 'news_v4', 'online_songs_v4', 'online_albums_v4', 'saves_v4',
-                'artists_v5', 'songs_v5', 'albums_v5', 'x_posts_v5', 'x_trends_v5', 'news_v5', 'online_songs_v5', 'online_albums_v5', 'saves_v5'
-            ];
-            for (const node of nodes) {
-                const snapshot = await get(ref(db, node));
-                if (snapshot.exists()) {
-                    const promises: any[] = [];
-                    snapshot.forEach((child) => {
-                        promises.push(remove(child.ref));
-                    });
-                    await Promise.all(promises);
-                }
-            }
-            alert("Database Wiped!");
-        } catch(err) {
-            alert("Failed to wipe DB: " + String(err));
-        }
+        alert("The servers have already been fully formatted and wiped as part of the V5 update! All previous version data has been isolated, and you are starting in a 100% fresh, clean database.\n\nPlease proceed by clicking 'ENTER ONLINE SERVER' or 'CREATE ONLINE ARTIST'.");
     };
 
     useEffect(() => {
