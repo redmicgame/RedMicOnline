@@ -1072,7 +1072,8 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     rank: index + 1, lastWeek: null, peak: index + 1, weeksOnChart: 1,
                     title: album.title, artist: album.artist, coverArt: album.coverArt,
                     isPlayerAlbum: album.isPlayerAlbum, albumId: album.albumId, uniqueId: album.uniqueId,
-                    weeklyActivity: album.weeklyActivity, label: album.label || 'Independent'
+                    weeklyActivity: album.weeklyActivity, label: album.label || 'Independent',
+                    weeklySales: album.weeklySales
                 });
             });
             

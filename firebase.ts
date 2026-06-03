@@ -103,14 +103,6 @@ export const resumeOnlineArtist = async (userId: string, name: string) => {
         }
         
         if (foundArtist) {
-            // Check if this artist is protected or if the user owns it
-            const isOwner = foundArtist.ownerId === userId;
-            const isProtected = ['Melanie Martinez', 'Doja Cat', 'Tinashe'].includes(name);
-            
-            if (!isOwner && !isProtected) {
-                throw new Error(`The artist name "${name}" is registered to another user.`);
-            }
-
             // Update user to point to this artist
             const userPath = `users/${userId}`;
             const userSnapshot = await get(child(ref(db), userPath));
