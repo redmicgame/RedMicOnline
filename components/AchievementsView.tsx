@@ -231,6 +231,56 @@ const AchievementsView: React.FC = () => {
                         emptyMessage="No streamed projects yet." 
                     />
                 </AchievementCard>
+
+                {/* Global Achievements / Records */}
+                {!gameState.offlineMode && (
+                    <div className="md:col-span-2 mt-8">
+                        <div className="flex items-center gap-2 mb-4 border-b border-zinc-700 pb-2">
+                            <h2 className="text-2xl font-bold">Global Records</h2>
+                            <span className="bg-red-600 text-xs px-2 py-1 rounded-full font-bold">ONLINE INTERNET MODE</span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {(() => {
+                                const onlineSongs = gameState.onlineSongs || [];
+                                const onlineArtists = gameState.onlineArtists || [];
+                                
+                                const mostStreamedGlobalSong = onlineSongs.length > 0 
+                                    ? [...onlineSongs].sort((a: any, b: any) => (b.allTimeStreams || 0) - (a.allTimeStreams || 0))[0]
+                                    : null;
+                                
+                                const peakListenersGlobal = onlineArtists.length > 0
+                                    ? [...onlineArtists].sort((a: any, b: any) => (b.monthlyListeners || 0) - (a.monthlyListeners || 0))[0]
+                                    : null;
+
+                                return (
+                                    <>
+                                        {mostStreamedGlobalSong && (
+                                            <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-emerald-500/30 p-4 rounded-xl flex items-center gap-4">
+                                                <img src={mostStreamedGlobalSong.coverArt || 'https://ui-avatars.com/api/?name=Unknown'} alt="Most streamed" className="w-16 h-16 rounded-md shadow object-cover" />
+                                                <div className="min-w-0 flex-grow">
+                                                    <p className="text-xs font-bold text-emerald-400 uppercase">Globally Most Streamed Song</p>
+                                                    <h3 className="text-lg font-bold truncate text-white">{mostStreamedGlobalSong.title}</h3>
+                                                    <p className="text-sm text-zinc-400 truncate">{mostStreamedGlobalSong.artistName}</p>
+                                                    <p className="font-mono text-sm text-white mt-1">{formatNumber(mostStreamedGlobalSong.allTimeStreams || 0)} streams</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {peakListenersGlobal && (
+                                            <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-blue-500/30 p-4 rounded-xl flex items-center gap-4">
+                                                <img src={peakListenersGlobal.avatar || `https://ui-avatars.com/api/?name=${peakListenersGlobal.name}`} alt="Most listeners" className="w-16 h-16 rounded-full shadow object-cover" />
+                                                <div className="min-w-0 flex-grow">
+                                                    <p className="text-xs font-bold text-blue-400 uppercase">Globally Most Monthly Listeners</p>
+                                                    <h3 className="text-lg font-bold truncate text-white">{peakListenersGlobal.name}</h3>
+                                                    <p className="font-mono text-sm text-white mt-1">{formatNumber(peakListenersGlobal.monthlyListeners || 0)} listeners</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );

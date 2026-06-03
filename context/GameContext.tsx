@@ -629,6 +629,9 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 inbox: [welcomeEmail],
             };
 
+            const npcs = generateNpcs(600, [], undefined, [mappedArtist.name]);
+            const npcAlbums = generateNpcAlbums(60, npcs);
+
             return {
                 ...initialState,
                 offlineMode: false,
@@ -641,8 +644,8 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     [mappedArtist.id]: newArtistData
                 },
                 date: startDate,
-                npcs: [], 
-                npcAlbums: [],
+                npcs: npcs, 
+                npcAlbums: npcAlbums,
             };
         }
         case 'START_SOLO_GAME': {
@@ -1047,8 +1050,23 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             })) : [];
             onlineAlbumContenders.sort((a, b) => b.weeklyActivity - a.weeklyActivity);
             
+            const npcAlbumContenders = state.npcAlbums ? state.npcAlbums.map(album => {
+                const albumSongs = album.songIds.map(id => state.npcs.find(s => s.uniqueId === id)).filter(Boolean);
+                const totalWeeklyStreams = albumSongs.reduce((sum, song) => sum + Math.floor((song?.basePopularity || 0) * (Math.random() * 0.4 + 0.8)), 0);
+                const streamActivity = Math.floor(totalWeeklyStreams / 1500);
+                const weeklySales = Math.floor((album.salesPotential || 1000) * (0.9 + (Math.random() * 0.2)));
+                return {
+                    uniqueId: album.uniqueId, title: album.title, artist: album.artist, label: album.label,
+                    coverArt: album.coverArt, isPlayerAlbum: false, albumId: album.uniqueId,
+                    weeklyActivity: streamActivity + weeklySales, weeklySales
+                };
+            }) : [];
+            
+            const allInitialAlbums = [...npcAlbumContenders, ...onlineAlbumContenders];
+            allInitialAlbums.sort((a, b) => b.weeklyActivity - a.weeklyActivity);
+
             const newBillboardTopAlbums: AlbumChartEntry[] = [];
-            const top50Albums = onlineAlbumContenders.slice(0, 50);
+            const top50Albums = allInitialAlbums.slice(0, 50);
             top50Albums.forEach((album, index) => {
                 newBillboardTopAlbums.push({
                     rank: index + 1, lastWeek: null, peak: index + 1, weeksOnChart: 1,
@@ -1092,31 +1110,28 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             let newNpcsList = [...state.npcs];
             let newNpcAlbums = [...state.npcAlbums];
 
-            if (state.offlineMode) {
-                const CHURN_COUNT = 100;
-                // Remove 100 NPCs from the bottom of the list.
-                if (newNpcsList.length >= CHURN_COUNT) {
-                     newNpcsList.splice(newNpcsList.length - CHURN_COUNT, CHURN_COUNT);
-                }
-               
-                // Generate 100 new NPCs, avoiding name collisions
-                const allPlayerNamesForNpcs = [...(state.allPlayerArtists?.map(a => a.name) || []), state.soloArtist?.name, state.group?.name].filter((n): n is string => !!n);
-                const newlyGeneratedNpcs = generateNewHits(CHURN_COUNT, newNpcsList, state.npcImages, allPlayerNamesForNpcs);
-
-                // Add them back to the list
-                newNpcsList.push(...newlyGeneratedNpcs);
-
-                // NPC Album Churn Logic
-                const ALBUM_CHURN_COUNT = 5;
-                if (newNpcAlbums.length > ALBUM_CHURN_COUNT) {
-                    newNpcAlbums.splice(newNpcAlbums.length - ALBUM_CHURN_COUNT, ALBUM_CHURN_COUNT);
-                }
-                // Generate new albums using the newest songs
-                const newestSongsForAlbums = newlyGeneratedNpcs.slice(0, ALBUM_CHURN_COUNT * 12); // Assuming max 12 songs per album
-                const newlyGeneratedAlbums = generateNpcAlbums(ALBUM_CHURN_COUNT, newestSongsForAlbums, state.npcImages);
-                newNpcAlbums.unshift(...newlyGeneratedAlbums); // Add new albums to the top
+            const CHURN_COUNT = 100;
+            // Remove 100 NPCs from the bottom of the list.
+            if (newNpcsList.length >= CHURN_COUNT) {
+                 newNpcsList.splice(newNpcsList.length - CHURN_COUNT, CHURN_COUNT);
             }
+           
+            // Generate 100 new NPCs, avoiding name collisions
+            const allPlayerNamesForNpcs = [...(state.allPlayerArtists?.map(a => a.name) || []), state.soloArtist?.name, state.group?.name].filter((n): n is string => !!n);
+            const newlyGeneratedNpcs = generateNewHits(CHURN_COUNT, newNpcsList, state.npcImages, allPlayerNamesForNpcs);
 
+            // Add them back to the list
+            newNpcsList.push(...newlyGeneratedNpcs);
+
+            // NPC Album Churn Logic
+            const ALBUM_CHURN_COUNT = 5;
+            if (newNpcAlbums.length > ALBUM_CHURN_COUNT) {
+                newNpcAlbums.splice(newNpcAlbums.length - ALBUM_CHURN_COUNT, ALBUM_CHURN_COUNT);
+            }
+            // Generate new albums using the newest songs
+            const newestSongsForAlbums = newlyGeneratedNpcs.slice(0, ALBUM_CHURN_COUNT * 12); // Assuming max 12 songs per album
+            const newlyGeneratedAlbums = generateNpcAlbums(ALBUM_CHURN_COUNT, newestSongsForAlbums, state.npcImages);
+            newNpcAlbums.unshift(...newlyGeneratedAlbums); // Add new albums to the top
 
             const newWeek = state.date.week + 1;
             const newYear = state.date.year + (newWeek > 52 ? 1 : 0);
@@ -3390,11 +3405,9 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
 
             let allContenders: any[] = [];
             if (!state.offlineMode) {
-                // Online Mode: use ONLY online songs exactly as they are from the server.
-                allContenders = onlineChartContenders.map(oc => ({
-                    ...oc,
-                    isPlayerSong: playerChartContenders.some(pc => pc.songId === oc.songId)
-                }));
+                // Online Mode: combine real online items with the player's local un-synced items and NPCs for a lively chart
+                const filteredOnlineContenders = onlineChartContenders.filter(oc => !playerChartContenders.some(pc => pc.songId === oc.songId));
+                allContenders = [...playerChartContenders, ...npcChartContenders, ...filteredOnlineContenders];
                 allContenders.sort((a, b) => b.weeklyStreams - a.weeklyStreams);
             } else {
                 // Offline Mode: Combine and use local Math.random logic
@@ -3614,7 +3627,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     };
                 });
 
-            const npcAlbumContenders = state.offlineMode ? newNpcAlbums.map(album => {
+            const npcAlbumContenders = newNpcAlbums.map(album => {
                 const albumSongs = album.songIds.map(id => newNpcsWithReleases.find(s => s.uniqueId === id)).filter(Boolean);
                 
                 const totalWeeklyStreams = albumSongs.reduce((sum, song) => {
@@ -3642,7 +3655,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     weeklyActivity,
                     weeklySales,
                 };
-            }) : [];
+            });
 
             // Add online albums
             const onlineAlbumContenders = (!state.offlineMode && state.onlineAlbums) ? state.onlineAlbums.map((a: any) => ({
@@ -3659,10 +3672,8 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             
             let allAlbumContenders: any[] = [];
             if (!state.offlineMode) {
-                allAlbumContenders = onlineAlbumContenders.map((oc: any) => ({
-                    ...oc,
-                    isPlayerAlbum: playerAlbumContenders.some(pa => pa.albumId === oc.albumId)
-                }));
+                const filteredOnlineAlbumContenders = onlineAlbumContenders.filter(oa => !playerAlbumContenders.some(pa => pa.albumId === oa.albumId));
+                allAlbumContenders = [...playerAlbumContenders, ...npcAlbumContenders, ...filteredOnlineAlbumContenders];
             } else {
                 const filteredOnlineAlbumContenders = onlineAlbumContenders.filter(oa => !playerAlbumContenders.some(pa => pa.albumId === oa.albumId));
                 allAlbumContenders = [...playerAlbumContenders, ...npcAlbumContenders, ...filteredOnlineAlbumContenders];

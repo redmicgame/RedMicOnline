@@ -59,7 +59,7 @@ const GameUI: React.FC = () => {
             if (diff > 0) {
                 if (diff > 12) {
                     dispatch({ type: 'SYNC_DATE', payload: globalWeekStamp });
-                    if (gameState.billboardHot100.length === 0 && gameState.onlineSongs && gameState.onlineSongs.length > 0) {
+                    if ((gameState.billboardHot100.length === 0 || gameState.billboardTopAlbums.length === 0) && gameState.onlineSongs && gameState.onlineSongs.length > 0 && gameState.onlineAlbums && gameState.onlineAlbums.length > 0) {
                         dispatch({ type: 'INIT_CHARTS' });
                     }
                 } else {
@@ -67,12 +67,12 @@ const GameUI: React.FC = () => {
                 }
             } else if (diff < 0) {
                 dispatch({ type: 'SYNC_DATE', payload: globalWeekStamp });
-                if (gameState.billboardHot100.length === 0 && gameState.onlineSongs && gameState.onlineSongs.length > 0) {
+                if ((gameState.billboardHot100.length === 0 || gameState.billboardTopAlbums.length === 0) && gameState.onlineSongs && gameState.onlineSongs.length > 0 && gameState.onlineAlbums && gameState.onlineAlbums.length > 0) {
                     dispatch({ type: 'INIT_CHARTS' });
                 }
             } else {
                 // diff === 0
-                if (gameState.billboardHot100.length === 0 && gameState.onlineSongs && gameState.onlineSongs.length > 0) {
+                if ((gameState.billboardHot100.length === 0 || gameState.billboardTopAlbums.length === 0) && gameState.onlineSongs && gameState.onlineSongs.length > 0 && gameState.onlineAlbums && gameState.onlineAlbums.length > 0) {
                     dispatch({ type: 'INIT_CHARTS' });
                 }
             }

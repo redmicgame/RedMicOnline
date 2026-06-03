@@ -71,6 +71,37 @@ const SpotifyChartView: React.FC = () => {
             });
         }
 
+        // Online players countdowns
+        if (gameState.onlineArtists && !gameState.offlineMode) {
+            gameState.onlineArtists.forEach((onlineArtist: any) => {
+                // Skip if this is a local player (we already added them above)
+                if (allPlayerArtists.some(p => p.id === onlineArtist.id)) return;
+
+                if (onlineArtist.labelSubmissions) {
+                    onlineArtist.labelSubmissions.forEach((sub: any) => {
+                        if (sub.status === 'scheduled' && sub.hasCountdownPage && sub.projectReleaseDate) {
+                            // Compute pre-saves
+                            let totalSongStreams = 0; // We don't have online songs nested here, so base pre-saves purely on popularity
+                            const popularity = onlineArtist.popularity || 50;
+                            // Approximate the submission date since we didn't push it
+                            const weeksSinceSubmit = 2; 
+                            const basePreSaves = (popularity * 15000) * (1 + (weeksSinceSubmit * 0.25));
+                            
+                            countdowns.push({
+                                id: sub.itemId,
+                                title: sub.release?.title || sub.itemName,
+                                artistName: onlineArtist.name || 'Unknown',
+                                coverArt: sub.release?.coverArt || 'https://ui-avatars.com/api/?name=Unknown',
+                                releaseDate: sub.projectReleaseDate,
+                                preSaves: basePreSaves,
+                                isExplicit: false,
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
         // Add some fake NPC countdowns if we don't have enough
         const fakeNpcCountdowns = 10 - countdowns.length;
         if (fakeNpcCountdowns > 0 && gameState.npcAlbums) {

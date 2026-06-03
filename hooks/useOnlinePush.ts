@@ -45,6 +45,20 @@ export const useOnlinePush = () => {
                     popularity: artistData.popularity || 0,
                     monthlyListeners: artistData.monthlyListeners || 0,
                     money: artistData.money || 0,
+                    totalAwards: (artistData.grammyHistory?.filter(a => a.isWinner).length || 0) + (artistData.amaHistory?.filter(a => a.isWinner).length || 0) + (artistData.vmaHistory?.filter(a => a.isWinner).length || 0) + (artistData.oscarHistory?.filter(a => a.isWinner).length || 0),
+                    labelSubmissions: artistData.labelSubmissions?.map(sub => ({
+                        status: sub.status,
+                        hasCountdownPage: sub.hasCountdownPage,
+                        projectReleaseDate: sub.projectReleaseDate,
+                        itemId: sub.itemId,
+                        itemName: sub.itemName,
+                        release: sub.release ? {
+                            id: sub.release.id,
+                            title: sub.release.title,
+                            coverArt: sub.release.coverArt,
+                            songIds: sub.release.songIds
+                        } : null
+                    })) || [],
                     createdAt: Date.now(), // keeps sorting static if needed, or update it
                     updatedAt: Date.now()
                 });

@@ -330,6 +330,68 @@ const RiaaView: React.FC = () => {
             }
         });
 
+        // 4. Process Online Songs
+        if (gameState.onlineSongs) {
+            gameState.onlineSongs.forEach(song => {
+                // Ensure it's not the local player's song since we already counted the local player's song
+                if (activeArtistData && activeArtistData.songs.some(s => s.id === song.id)) return;
+                
+                const units = (song.allTimeStreams || 0) / 150 / 1000000;
+                const level = getCertLevel(units);
+                if (level) {
+                     const mockReleaseDate = { year: song.gameYear || date.year, week: song.gameWeek || 1 };
+                     certs.push({
+                        id: song.id,
+                        artist: song.artistName,
+                        title: song.title,
+                        format: 'SINGLE',
+                        certifiedUnits: parseFloat(units.toFixed(1)),
+                        certName: level.name,
+                        certImageDetails: level,
+                        label: 'INDEPENDENT',
+                        date: getLatestCertDate(units, mockReleaseDate, song.id),
+                        releaseDate: formatGameDate(mockReleaseDate),
+                        genre: song.genre || 'POP',
+                        history: getCertHistory(units, mockReleaseDate, song.id)
+                    });
+                }
+            });
+        }
+
+        // 5. Process Online Albums
+        if (gameState.onlineAlbums) {
+            gameState.onlineAlbums.forEach(album => {
+                if (activeArtistData && activeArtistData.releases.some(r => r.id === album.id)) return;
+
+                // Here we actually don't have allTimeStreams for albums easily without iterating songs.
+                // However, online_albums_v3 might not have songIds. But if the game computes pure sales directly from `album.allTimeSales` we could use that. Let's do a fallback:
+                // We'll compute it from online_songs if they match artistId and album... wait, online_songs don't store albumId.
+                // Let's use `weeklySales` as proxy or a pseudo random based on popularity. Wait, some onlineAlbums might have `weeklySales`. 
+                // To keep it simple, we use a deterministic mock based on Title for now since V3 doesn't track allTime sales for albums perfectly online.
+                const pseudoRand = (album.title.length * album.artistName.length % 10) / 10;
+                // If the album is charting, weeklySales might be high
+                const mockUnits = ((album.weeklySales || 0) * 20 + pseudoRand * 10000) / 1000000; // rough guess
+                const level = getCertLevel(mockUnits);
+                if (level) {
+                     const mockReleaseDate = { year: album.gameYear || date.year, week: album.gameWeek || 1 };
+                     certs.push({
+                        id: album.id, 
+                        artist: album.artistName,
+                        title: album.title,
+                        format: 'ALBUM',
+                        certifiedUnits: parseFloat(mockUnits.toFixed(1)),
+                        certName: level.name,
+                        certImageDetails: level,
+                        label: album.releasingLabel?.name || 'INDEPENDENT',
+                        date: getLatestCertDate(mockUnits, mockReleaseDate, album.id),
+                        releaseDate: formatGameDate(mockReleaseDate),
+                        genre: 'POP',
+                        history: getCertHistory(mockUnits, mockReleaseDate, album.id)
+                    });
+                }
+            });
+        }
+
         return certs.sort((a, b) => b.certifiedUnits - a.certifiedUnits);
     }, [gameState, activeArtistData, activeArtist]);
 

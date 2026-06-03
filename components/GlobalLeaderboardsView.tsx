@@ -22,6 +22,7 @@ const GlobalLeaderboardsView: React.FC = () => {
                 popularity: data.popularity || 0,
                 monthlyListeners: data.monthlyListeners || 0,
                 money: data.money || 0,
+                totalAwards: (data.grammyHistory?.filter(a => a.isWinner).length || 0) + (data.amaHistory?.filter(a => a.isWinner).length || 0) + (data.vmaHistory?.filter(a => a.isWinner).length || 0) + (data.oscarHistory?.filter(a => a.isWinner).length || 0),
                 isPlayer: true
             });
         }
@@ -36,8 +37,9 @@ const GlobalLeaderboardsView: React.FC = () => {
                     id: oa.id,
                     name: oa.name,
                     popularity: oa.popularity || 0,
-                    monthlyListeners: oa.monthlyListeners || 0, // Need to implement this in useOnlinePush if not exist
+                    monthlyListeners: oa.monthlyListeners || 0,
                     money: oa.money || 0,
+                    totalAwards: oa.totalAwards || 0,
                     isPlayer: false
                 });
             }
@@ -45,12 +47,13 @@ const GlobalLeaderboardsView: React.FC = () => {
     }
     
     // Sorting
-    const [sortBy, setSortBy] = React.useState<'popularity' | 'listeners' | 'wealth'>('popularity');
+    const [sortBy, setSortBy] = React.useState<'popularity' | 'listeners' | 'wealth' | 'awards'>('popularity');
     
     const sortedArtists = [...allArtists].sort((a, b) => {
         if (sortBy === 'popularity') return b.popularity - a.popularity;
         if (sortBy === 'listeners') return b.monthlyListeners - a.monthlyListeners;
         if (sortBy === 'wealth') return b.money - a.money;
+        if (sortBy === 'awards') return b.totalAwards - a.totalAwards;
         return 0;
     });
 
@@ -78,6 +81,12 @@ const GlobalLeaderboardsView: React.FC = () => {
                         Most Monthly Listeners
                     </button>
                     <button 
+                        onClick={() => setSortBy('awards')}
+                        className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${sortBy === 'awards' ? 'bg-purple-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+                    >
+                        Most Awards Won
+                    </button>
+                    <button 
                         onClick={() => setSortBy('wealth')}
                         className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${sortBy === 'wealth' ? 'bg-yellow-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
                     >
@@ -95,6 +104,7 @@ const GlobalLeaderboardsView: React.FC = () => {
                                     {sortBy === 'popularity' && `Popularity: ${formatNumber(artist.popularity)}`}
                                     {sortBy === 'listeners' && `Monthly Listeners: ${formatNumber(artist.monthlyListeners)}`}
                                     {sortBy === 'wealth' && `Net Worth: $${formatNumber(artist.money)}`}
+                                    {sortBy === 'awards' && `Awards Won: ${formatNumber(artist.totalAwards)}`}
                                 </p>
                             </div>
                         </div>
