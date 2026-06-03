@@ -266,37 +266,41 @@ const useItunesData = () => {
                 }
             }
         } else {
-             const npcAlbum = npcAlbums.find(a => a.uniqueId === album.uniqueId);
+             const npcAlbum = npcAlbums.find(a => a.uniqueId === album.uniqueId) || (gameState.onlineAlbums && gameState.onlineAlbums.find(a => a.id === album.uniqueId));
              if(npcAlbum) {
-                tracks = npcAlbum.songIds.map(id => {
-                    const song = npcs.find(s => s.uniqueId === id);
-                    if(!song) return null;
-                    const chartData = allSongs.find(s => s.uniqueId === id);
-                    const itunesSongData = chartData || {
-                        rank: 0,
-                        lastWeek: null,
-                        peak: 0,
-                        weeksOnChart: 0,
-                        isPlayerSong: false,
-                        songId: undefined,
-                        uniqueId: song.uniqueId,
-                        weeklyStreams: song.basePopularity * (Math.random() * 0.4 + 0.8),
-                        price: getPrice(song.uniqueId, 'song'),
-                        duration: 180 + Math.floor(Math.random() * 60),
-                        explicit: Math.random() > 0.8,
-                        title: song.title,
-                        artist: song.artist,
-                        coverArt: album.coverArt,
-                    };
+                 if (!npcAlbum.songIds) {
+                     tracks = []; // Online albums don't sync tracklists yet
+                 } else {
+                     tracks = npcAlbum.songIds.map((id: string) => {
+                         const song = npcs.find(s => s.uniqueId === id);
+                         if(!song) return null;
+                         const chartData = allSongs.find(s => s.uniqueId === id);
+                         const itunesSongData = chartData || {
+                             rank: 0,
+                             lastWeek: null,
+                             peak: 0,
+                             weeksOnChart: 0,
+                             isPlayerSong: false,
+                             songId: undefined,
+                             uniqueId: song.uniqueId,
+                             weeklyStreams: song.basePopularity * (Math.random() * 0.4 + 0.8),
+                             price: getPrice(song.uniqueId, 'song'),
+                             duration: 180 + Math.floor(Math.random() * 60),
+                             explicit: Math.random() > 0.8,
+                             title: song.title,
+                             artist: song.artist,
+                             coverArt: album.coverArt,
+                         };
 
-                    return {
-                        ...itunesSongData,
-                        title: song.title,
-                        artist: song.artist,
-                        coverArt: album.coverArt,
-                        isAvailable: true,
-                    };
-                }).filter((s): s is ITunesSong & { isAvailable: boolean } => !!s);
+                         return {
+                             ...itunesSongData,
+                             title: song.title,
+                             artist: song.artist,
+                             coverArt: album.coverArt,
+                             isAvailable: true,
+                         };
+                     }).filter((s: unknown): s is ITunesSong & { isAvailable: boolean } => !!s);
+                 }
              }
         }
         return { ...album, tracks };

@@ -3941,10 +3941,15 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     }
                 }
 
-                // NPC contenders
-                const npcSongsForOscars = [...newNpcsList].sort((a,b) => b.basePopularity - a.basePopularity).slice(0, 10);
-                npcSongsForOscars.forEach(song => {
-                    contenders.push({ id: song.uniqueId, name: song.title, artistName: song.artist, isPlayer: false, score: (song.basePopularity / 100000) * 1.5, coverArt: song.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.artist)}&background=random&color=fff&size=250` });
+                // NPC / Online contenders
+                const fallbackSongs = state.offlineMode ? newNpcsList : (state.onlineSongs || []);
+                const oscarSongs = [...fallbackSongs].sort((a: any, b: any) => (b.basePopularity || b.lastWeekStreams || 0) - (a.basePopularity || a.lastWeekStreams || 0)).slice(0, 10);
+                oscarSongs.forEach((song: any) => {
+                    if (state.offlineMode) {
+                        contenders.push({ id: song.uniqueId, name: song.title, artistName: song.artist, isPlayer: false, score: (song.basePopularity / 100000) * 1.5, coverArt: song.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.artist)}&background=random&color=fff&size=250` });
+                    } else {
+                        contenders.push({ id: song.id, name: song.title, artistName: song.artistName, isPlayer: false, score: ((song.lastWeekStreams || Math.random() * 50000) / 100000) * 1.5, coverArt: song.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.artistName)}&background=random&color=fff&size=250` });
+                    }
                 });
 
                 contenders.sort((a,b) => b.score - a.score);
@@ -4213,17 +4218,21 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     }
                     
                     const numNpcContenders = 15;
+                    const fallbackAlbums = state.offlineMode ? newNpcAlbums : (state.onlineAlbums || []);
+                    const fallbackSongs = state.offlineMode ? newNpcsWithReleases : (state.onlineSongs || []);
+
                     if (isAlbumCategory) {
-                        newNpcAlbums.slice(0, numNpcContenders * 5)
+                        fallbackAlbums.slice(0, numNpcContenders * 5)
                             .slice(0, numNpcContenders)
-                            .forEach(album => contenders.push({ artistId: `npc_${album.artist}`, artistName: album.artist, itemId: album.uniqueId, itemName: album.title, score: Math.random() * 50 }));
+                            .forEach(album => contenders.push({ artistId: state.offlineMode ? `npc_${album.artist}` : album.artistId, artistName: state.offlineMode ? album.artist : album.artistName, itemId: state.offlineMode ? album.uniqueId : album.id, itemName: album.title, score: state.offlineMode ? Math.random() * 50 : ((album.weeklySales || 0) / 10000) * Math.random() * 50 }));
                     } else if (isSongCategory) {
-                        newNpcsWithReleases.slice(0, numNpcContenders * 5)
+                        fallbackSongs.slice(0, numNpcContenders * 5)
                             .slice(0, numNpcContenders)
-                            .forEach(song => contenders.push({ artistId: `npc_${song.artist}`, artistName: song.artist, itemId: song.uniqueId, itemName: song.title, score: Math.random() * 50 }));
+                            .forEach(song => contenders.push({ artistId: state.offlineMode ? `npc_${song.artist}` : song.artistId, artistName: state.offlineMode ? song.artist : song.artistName, itemId: state.offlineMode ? song.uniqueId : song.id, itemName: song.title, score: state.offlineMode ? Math.random() * 50 : ((song.lastWeekStreams || 0) / 100000) * Math.random() * 50 }));
                     } else {
-                        [...new Set(newNpcAlbums.slice(0, numNpcContenders).map(a => a.artist))].slice(0, 5).forEach(artistName => {
-                            contenders.push({ artistId: `npc_${artistName}`, artistName, itemId: `npc_${artistName}`, itemName: artistName, score: Math.random() * 100 + 50 });
+                        const sourceNames = state.offlineMode ? newNpcAlbums.map(a => a.artist) : (state.onlineAlbums || []).map((a: any) => a.artistName);
+                        [...new Set(sourceNames)].slice(0, 5).forEach(artistName => {
+                            contenders.push({ artistId: `bot_${artistName}`, artistName: artistName as string, itemId: `bot_${artistName}`, itemName: artistName as string, score: Math.random() * 100 + 50 });
                         });
                     }
 
@@ -4401,35 +4410,50 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                     }
                     
                     const numNpcContenders = 15;
+                    const fallbackAlbums = state.offlineMode ? newNpcAlbums : (state.onlineAlbums || []);
+                    const fallbackSongs = state.offlineMode ? newNpcsWithReleases : (state.onlineSongs || []);
+
                     if (isAlbumCategory) {
-                        newNpcAlbums.slice(0, numNpcContenders * 5)
+                        fallbackAlbums.slice(0, numNpcContenders * 5)
                             .filter(album => {
                                 if (!genreFilter) return true;
-                                const albumSongs = album.songIds.map(id => newNpcsWithReleases.find(s => s.uniqueId === id)).filter((s): s is NpcSong => !!s);
-                                if (albumSongs.length === 0) return false;
-                                const genreCounts = albumSongs.reduce((acc, song) => {
-                                    acc[song.genre] = (acc[song.genre] || 0) + 1;
-                                    return acc;
-                                }, {} as {[genre: string]: number});
-                                const majorGenre = Object.keys(genreCounts).reduce((a, b) => genreCounts[a] > genreCounts[b] ? a : b);
-                                return majorGenre === genreFilter;
+                                if (state.offlineMode) {
+                                    const albumSongs = album.songIds.map((id: string) => newNpcsWithReleases.find(s => s.uniqueId === id)).filter((s: any): s is NpcSong => !!s);
+                                    if (albumSongs.length === 0) return false;
+                                    const genreCounts = albumSongs.reduce((acc: any, song: any) => {
+                                        acc[song.genre] = (acc[song.genre] || 0) + 1;
+                                        return acc;
+                                    }, {} as {[genre: string]: number});
+                                    const majorGenre = Object.keys(genreCounts).reduce((a, b) => genreCounts[a] > genreCounts[b] ? a : b);
+                                    return majorGenre === genreFilter;
+                                }
+                                return true; // Online albums don't currently have genre strictly checked or tracked in DB easily, assume all valid
                             })
                             .slice(0, numNpcContenders)
                             .forEach(album => {
-                                const albumSongs = album.songIds.map(id => newNpcsWithReleases.find(s => s.uniqueId === id)).filter(Boolean);
-                                const avgPopularity = albumSongs.reduce((sum, s) => sum + (s?.basePopularity || 0), 0) / (albumSongs.length || 1);
-                                contenders.push({ id: album.uniqueId, name: album.title, artistName: album.artist, isPlayer: false, score: (avgPopularity / 100000) * 1.5, coverArt: album.coverArt });
+                                if (state.offlineMode) {
+                                    const albumSongs = album.songIds.map((id: string) => newNpcsWithReleases.find(s => s.uniqueId === id)).filter(Boolean);
+                                    const avgPopularity = albumSongs.reduce((sum: number, s: any) => sum + (s?.basePopularity || 0), 0) / (albumSongs.length || 1);
+                                    contenders.push({ id: album.uniqueId, name: album.title, artistName: album.artist, isPlayer: false, score: (avgPopularity / 100000) * 1.5, coverArt: album.coverArt });
+                                } else {
+                                    contenders.push({ id: album.id, name: album.title, artistName: album.artistName, isPlayer: false, score: ((album.weeklySales || 0) / 100000) * 1.5, coverArt: album.coverArt });
+                                }
                             });
                     } else if (categoryName !== 'Best New Artist') {
-                        newNpcsWithReleases.slice(0, numNpcContenders * 5)
+                        fallbackSongs.slice(0, numNpcContenders * 5)
                             .filter(song => !genreFilter || song.genre === genreFilter)
                             .slice(0, numNpcContenders)
                             .forEach(song => {
-                                contenders.push({ id: song.uniqueId, name: song.title, artistName: song.artist, isPlayer: false, score: song.basePopularity / 100000, coverArt: song.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.artist)}&background=random&color=fff&size=250` });
+                                if (state.offlineMode) {
+                                    contenders.push({ id: song.uniqueId, name: song.title, artistName: song.artist, isPlayer: false, score: song.basePopularity / 100000, coverArt: song.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.artist)}&background=random&color=fff&size=250` });
+                                } else {
+                                    contenders.push({ id: song.id, name: song.title, artistName: song.artistName, isPlayer: false, score: (song.lastWeekStreams || Math.random() * 500000) / 100000, coverArt: song.coverArt || `https://ui-avatars.com/api/?name=${encodeURIComponent(song.artistName)}&background=random&color=fff&size=250` });
+                                }
                             });
                     } else {
-                        [...new Set(newNpcAlbums.slice(0, numNpcContenders).map(a => a.artist))].slice(0, 5).forEach(artistName => {
-                            contenders.push({ id: `npc_${artistName}`, name: artistName, artistName, isPlayer: false, score: Math.random() * 100 + 50 });
+                        const sourceNames = state.offlineMode ? newNpcAlbums.map(a => a.artist) : (state.onlineAlbums || []).map((a: any) => a.artistName);
+                        [...new Set(sourceNames)].slice(0, 5).forEach(artistName => {
+                            contenders.push({ id: `bot_${artistName}`, name: artistName as string, artistName: artistName as string, isPlayer: false, score: Math.random() * 100 + 50 });
                         });
                     }
 

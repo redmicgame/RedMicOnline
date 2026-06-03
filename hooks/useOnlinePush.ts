@@ -96,6 +96,7 @@ export const useOnlinePush = () => {
                             artistId: artistProfile.id,
                             artistName: artistProfile.name,
                             title: release.title,
+                            type: release.type,
                             coverArt: release.coverArt || null,
                             weeklySales: weeklyActivity, // In DB, we use weeklySales to sort, so let's push weeklyActivity to it so we sort by activity
                             releasingLabel: release.releasingLabel ? { name: release.releasingLabel.name } : null,

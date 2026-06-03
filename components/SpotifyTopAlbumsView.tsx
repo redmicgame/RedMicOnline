@@ -62,7 +62,7 @@ const SpotifyTopAlbumsView: React.FC = () => {
     
     const longestAlbum = Object.entries(albumChartHistory).reduce((longest, [id, history]) => {
         if (!longest || history.weeksOnChart > longest.history.weeksOnChart) {
-            const album = billboardTopAlbums.find(a => a.uniqueId === id) || gameState.npcAlbums.find(a => a.uniqueId === id);
+            const album = billboardTopAlbums.find(a => a.uniqueId === id) || gameState.npcAlbums.find(a => a.uniqueId === id) || (gameState.onlineAlbums && gameState.onlineAlbums.find(a => a.id === id));
             if (album) return { album, history };
         }
         return longest;
