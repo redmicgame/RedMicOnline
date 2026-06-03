@@ -19,6 +19,14 @@ class RedMicDexie extends Dexie {
 
 export const db = new RedMicDexie();
 
+// Clean up old databases to free up significant space
+setTimeout(() => {
+    Dexie.delete('red-mic-game').catch(() => {});
+    Dexie.delete('red-mic-v2').catch(() => {});
+    // Clear out old large offline cache items
+    localStorage.removeItem('old_gameState');
+}, 5000);
+
 export const getActiveSaveId = (): number => {
     const stored = localStorage.getItem('redmic_active_save_id');
     return stored ? parseInt(stored, 10) : 1;

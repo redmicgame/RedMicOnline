@@ -9858,6 +9858,51 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const localSave = await db.saves.get(getActiveSaveId());
                 if (localSave && localSave.state.careerMode && localSave.state.artistsData) {
                     stateToLoad = localSave.state;
+
+                    // --- STORAGE OPTIMIZATION (Retroactive Cleanup) ---
+                    try {
+                        if (stateToLoad.npcs && stateToLoad.npcs.length > 300) {
+                            stateToLoad.npcs = stateToLoad.npcs.slice(stateToLoad.npcs.length - 300);
+                        }
+                        if (stateToLoad.npcAlbums && stateToLoad.npcAlbums.length > 50) {
+                            stateToLoad.npcAlbums = stateToLoad.npcAlbums.slice(stateToLoad.npcAlbums.length - 50);
+                        }
+                        if (stateToLoad.chartHistory) {
+                            const keys = Object.keys(stateToLoad.chartHistory);
+                            if (keys.length > 500) {
+                                // Keep the newest 500 records only to save megabytes of JSON text
+                                const newH: any = {};
+                                keys.slice(keys.length - 500).forEach((k: string) => {
+                                    newH[k] = stateToLoad!.chartHistory[k];
+                                });
+                                stateToLoad.chartHistory = newH;
+                            }
+                        }
+                        if (stateToLoad.albumChartHistory) {
+                            const keys = Object.keys(stateToLoad.albumChartHistory);
+                            if (keys.length > 500) {
+                                const newH: any = {};
+                                keys.slice(keys.length - 500).forEach((k: string) => newH[k] = stateToLoad!.albumChartHistory[k]);
+                                stateToLoad.albumChartHistory = newH;
+                            }
+                        }
+                        if (stateToLoad.artistsData) {
+                            for (const key in stateToLoad.artistsData) {
+                                const d = stateToLoad.artistsData[key];
+                                if (d.xPosts && d.xPosts.length > 50) {
+                                    d.xPosts = d.xPosts.slice(0, 50);
+                                }
+                                if (d.streamsHistory && d.streamsHistory.length > 52) {
+                                    d.streamsHistory = d.streamsHistory.slice(d.streamsHistory.length - 52);
+                                }
+                                // Compress any already-bloated image payloads over 500k to a placeholder warning or just remove massive old strings if they lag out.
+                                // We won't ruthlessly delete user images unless they want to, but compressing array chunks is safe.
+                            }
+                        }
+                    } catch(e) {
+                        console.error('Failed to optimize old save state', e);
+                    }
+                    // ----------------------------------------------------
                 }
 
                 if (stateToLoad) {
