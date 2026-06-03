@@ -67,6 +67,32 @@ export const logout = async () => {
     }
 };
 
+export const saveOnlineGameState = async (userId: string, gameState: any) => {
+    try {
+        const path = `saves_v3/${userId}`;
+        // Stripping out non-essential giant arrays if needed, but stringify full state usually fits in 16MB.
+        // We do a JSON string to avoid structured overhead.
+        const cleanState = { ...gameState, onlineSongs: [], onlineAlbums: [], onlineArtists: [], onlinePosts: [] };
+        await set(ref(db, path), JSON.stringify(cleanState));
+    } catch (err) {
+        console.error("Online Save Sync Error:", err);
+    }
+};
+
+export const loadOnlineGameState = async (userId: string) => {
+    try {
+        const path = `saves_v3/${userId}`;
+        const snapshot = await get(ref(db, path));
+        if (snapshot.exists()) {
+            return JSON.parse(snapshot.val());
+        }
+        return null;
+    } catch (err) {
+        console.error("Online Save Load Error:", err);
+        return null;
+    }
+};
+
 export const getOrCreateUser = async (user: any) => {
     const path = `users/${user.uid}`;
     try {
@@ -87,7 +113,7 @@ export const getOrCreateUser = async (user: any) => {
     }
 }
 
-export const resumeOnlineArtist = async (userId: string, name: string) => {
+export const resumeOnlineArtist = async (userId: string, name: string, code?: string, forceSetInviteCode?: boolean) => {
     try {
         const artistsRef = ref(db, 'artists_v3');
         const snapshot = await get(artistsRef);
@@ -103,6 +129,20 @@ export const resumeOnlineArtist = async (userId: string, name: string) => {
         }
         
         if (foundArtist) {
+            if (!foundArtist.inviteCode && !forceSetInviteCode) {
+                throw new Error('NO_INVITE_CODE_SET');
+            } else if (!foundArtist.inviteCode && forceSetInviteCode && code) {
+                await update(ref(db, `artists_v3/${foundArtistId}`), { inviteCode: code });
+                foundArtist.inviteCode = code;
+            } else if (foundArtist.inviteCode && foundArtist.inviteCode !== code) {
+                // If it doesn't match, verify if they already own it
+                const userSnapshot = await get(child(ref(db), `users/${userId}`));
+                const userData = userSnapshot.exists() ? userSnapshot.val() : null;
+                if (!userData || userData.activeArtistId !== foundArtistId) {
+                    throw new Error('Incorrect password for this artist.');
+                }
+            }
+
             // Update user to point to this artist
             const userPath = `users/${userId}`;
             const userSnapshot = await get(child(ref(db), userPath));
@@ -200,12 +240,13 @@ export const createOnlineArtist = async (userId: string, name: string, genre: st
     }
 
     const artistId = `artist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const path = `artists/${artistId}`;
+    const path = `artists_v3/${artistId}`;
     try {
         const newArtist = {
             ownerId: userId,
             name,
             genre,
+            inviteCode: code,
             funds: 100000,
             popularity: 0,
             energy: 100,

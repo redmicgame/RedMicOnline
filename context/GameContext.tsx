@@ -1026,7 +1026,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 };
             }) : [];
 
-            const onlineContenders = state.onlineSongs.filter((s: any) => s.isReleased).map((s: any) => ({
+            const onlineContenders = state.offlineMode ? [] : state.onlineSongs.filter((s: any) => s.isReleased).map((s: any) => ({
                 uniqueId: s.id || crypto.randomUUID(), title: s.title, artist: s.artistName || 'Unknown Online Artist',
                 weeklyStreams: s.lastWeekStreams || 0,
                 isPlayerSong: false, 
@@ -1034,7 +1034,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 genre: s.genre || 'Pop',
             }));
 
-            const allContenders = [...npcChartContenders, ...onlineContenders];
+            const allContenders = state.offlineMode ? [...npcChartContenders] : [...onlineContenders];
             
             allContenders.sort((a, b) => b.weeklyStreams - a.weeklyStreams);
             
@@ -1073,7 +1073,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 };
             }) : [];
             
-            const allInitialAlbums = state.offlineMode ? [...npcAlbumContenders, ...onlineAlbumContenders] : [...npcAlbumContenders, ...onlineAlbumContenders];
+            const allInitialAlbums = state.offlineMode ? [...npcAlbumContenders] : [...onlineAlbumContenders];
             allInitialAlbums.sort((a, b) => b.weeklyActivity - a.weeklyActivity);
 
             const newBillboardTopAlbums: AlbumChartEntry[] = [];
@@ -3417,9 +3417,9 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
 
             let allContenders: any[] = [];
             if (!state.offlineMode) {
-                // Online Mode: combine real online items with the player's local un-synced items and NPCs for a lively chart
+                // Online Mode: combine real online items with the player's local un-synced items
                 const filteredOnlineContenders = onlineChartContenders.filter(oc => !playerChartContenders.some(pc => pc.songId === oc.songId));
-                allContenders = [...playerChartContenders, ...npcChartContenders, ...filteredOnlineContenders];
+                allContenders = [...playerChartContenders, ...filteredOnlineContenders];
                 allContenders.sort((a, b) => b.weeklyStreams - a.weeklyStreams);
             } else {
                 // Offline Mode: Combine and use local Math.random logic
@@ -3685,7 +3685,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
             let allAlbumContenders: any[] = [];
             if (!state.offlineMode) {
                 const filteredOnlineAlbumContenders = onlineAlbumContenders.filter(oa => !playerAlbumContenders.some(pa => pa.albumId === oa.albumId));
-                allAlbumContenders = [...playerAlbumContenders, ...npcAlbumContenders, ...filteredOnlineAlbumContenders];
+                allAlbumContenders = [...playerAlbumContenders, ...filteredOnlineAlbumContenders];
             } else {
                 const filteredOnlineAlbumContenders = onlineAlbumContenders.filter(oa => !playerAlbumContenders.some(pa => pa.albumId === oa.albumId));
                 allAlbumContenders = [...playerAlbumContenders, ...npcAlbumContenders, ...filteredOnlineAlbumContenders];
@@ -9873,7 +9873,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         currentSaveId = `save_${Date.now()}_${Math.random().toString(36).substring(7)}`;
                         dispatch({ type: 'SET_CLOUD_SAVE_ID', payload: currentSaveId });
                     }
-                    await saveGameToCloud(user.uid, currentSaveId, gameState);
+                    if (gameState.careerMode === 'online') {
+                        const { saveOnlineGameState } = await import('../firebase');
+                        await saveOnlineGameState(user.uid, gameState);
+                    } else {
+                        await saveGameToCloud(user.uid, currentSaveId, gameState);
+                    }
                 } catch (err) {
                     console.error("Could not background save to Cloud DB", err);
                 }

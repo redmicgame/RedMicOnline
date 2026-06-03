@@ -18,6 +18,8 @@ const StartScreen: React.FC = () => {
     const [onlineArtistName, setOnlineArtistName] = useState('');
     const [onlineGenre, setOnlineGenre] = useState('Pop');
     const [inviteCode, setInviteCode] = useState('');
+    const [showPasswordPopup, setShowPasswordPopup] = useState(false);
+    const [legacyArtistName, setLegacyArtistName] = useState('');
 
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -97,8 +99,27 @@ const StartScreen: React.FC = () => {
             return;
         }
         if (onlineProfile) {
-            // Load existing online profile
-            dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: onlineProfile } });
+            // Check if profile needs a password upgrade
+            if (!onlineProfile.inviteCode && !showPasswordPopup) {
+                setLegacyArtistName(onlineProfile.name);
+                setShowPasswordPopup(true);
+                return;
+            }
+            // Load existing online profile with save data if exists
+            setIsLoading(true);
+            try {
+                const { loadOnlineGameState } = await import('../firebase');
+                const savedState = await loadOnlineGameState(user.uid);
+                if (savedState) {
+                    // Start online game basically acts as a reset, so use LOAD_GAME if we have a state
+                    dispatch({ type: 'LOAD_GAME', payload: savedState });
+                } else {
+                    dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: onlineProfile } });
+                }
+            } catch(e) {
+                dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: onlineProfile } });
+            }
+            setIsLoading(false);
             return;
         }
         if (!onlineArtistName.trim() || !onlineGenre.trim()) {
@@ -136,9 +157,15 @@ const StartScreen: React.FC = () => {
                 } catch (createErr: any) {
                     if (createErr.message.includes('already taken')) {
                         // Try to resume instead if we own it
-                        const existingArtist = await resumeOnlineArtist(user.uid, trimmedName);
+                        const existingArtist = await resumeOnlineArtist(user.uid, trimmedName, inviteCode.trim());
                         if (existingArtist) {
-                            dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: existingArtist } });
+                            const { loadOnlineGameState } = await import('../firebase');
+                            const savedState = await loadOnlineGameState(user.uid);
+                            if (savedState) {
+                                dispatch({ type: 'LOAD_GAME', payload: savedState });
+                            } else {
+                                dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: existingArtist } });
+                            }
                         }
                     } else {
                         throw createErr;
@@ -146,7 +173,12 @@ const StartScreen: React.FC = () => {
                 }
             }
         } catch (err: any) {
-            setError('Failed: ' + err.message);
+            if (err.message === 'NO_INVITE_CODE_SET') {
+                setLegacyArtistName(trimmedName);
+                setShowPasswordPopup(true);
+            } else {
+                setError('Failed: ' + err.message);
+            }
         }
         setIsLoading(false);
     };
@@ -190,6 +222,34 @@ const StartScreen: React.FC = () => {
                 {/* Removed Classic Mode UI and Mode Toggles per user request */}
 
                 <form onSubmit={handleOnlineSubmit} className="space-y-4">
+                        {showPasswordPopup && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                                <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-[90%] max-w-md shadow-2xl">
+                                    <h3 className="text-xl font-bold text-white mb-2">Notice: Account Protection</h3>
+                                    <p className="text-zinc-400 text-sm mb-4">
+                                        The artist <b>{legacyArtistName}</b> was created before the new security update. Please choose a password to protect it from being stolen by other players.
+                                    </p>
+                                    <input type="text" value={inviteCode} onChange={e => setInviteCode(e.target.value)} placeholder="Choose a secure password/invite code" className="w-full bg-black border border-zinc-700 rounded-lg h-12 px-4 mb-4 text-white focus:ring-2 focus:ring-blue-500 outline-none" required />
+                                    <div className="flex gap-3">
+                                        <button type="button" onClick={() => setShowPasswordPopup(false)} className="flex-1 h-10 rounded-lg font-bold text-sm bg-zinc-800 hover:bg-zinc-700 transition">Cancel</button>
+                                        <button type="button" onClick={async () => {
+                                            if(!inviteCode.trim()) { alert("Please enter a password."); return; }
+                                            try {
+                                                const { resumeOnlineArtist, loadOnlineGameState } = await import('../firebase');
+                                                const upgradedArtist = await resumeOnlineArtist(user!.uid, legacyArtistName, inviteCode.trim(), true);
+                                                const savedState = await loadOnlineGameState(user!.uid);
+                                                if (savedState) {
+                                                    dispatch({ type: 'LOAD_GAME', payload: savedState });
+                                                } else {
+                                                    dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: upgradedArtist } });
+                                                }
+                                                setShowPasswordPopup(false);
+                                            } catch(err: any) { alert(err.message); }
+                                        }} className="flex-1 h-10 rounded-lg font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white shadow shadow-blue-500/20 transition">Set Password & Enter</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         {!user ? (
                             <div className="mb-6 flex justify-center flex-col items-center gap-4">
                                 <p className="text-zinc-400 text-center text-sm">To enter the global servers, please sign in.</p>
@@ -233,8 +293,8 @@ const StartScreen: React.FC = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-1">Invite Code (Optional)</label>
-                                    <input type="text" value={inviteCode} onChange={e => setInviteCode(e.target.value)} placeholder="If reserving a special name" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg h-12 px-4 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    <label className="block text-sm font-medium text-zinc-300 mb-1">Password (Required to protect your artist)</label>
+                                    <input type="text" value={inviteCode} onChange={e => setInviteCode(e.target.value)} placeholder="Choose a password" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg h-12 px-4 focus:ring-2 focus:ring-blue-500 outline-none" required />
                                 </div>
                             </>
                         ))}
