@@ -104,10 +104,24 @@ const StartScreen: React.FC = () => {
         if (!onlineArtistName.trim() || !onlineGenre.trim()) {
             setError('Artist name and genre are required.'); return;
         }
+        const lockedArtists: Record<string, string> = {
+            'Melanie Martinez': 'crybaby',
+            'Doja Cat': 'scarlet',
+            'Tinashe': 'nasty'
+        };
+        const trimmedName = onlineArtistName.trim();
+        
+        if (lockedArtists[trimmedName]) {
+            if (inviteCode !== lockedArtists[trimmedName]) {
+                setError(`Incorrect password for protected artist: ${trimmedName}`);
+                return;
+            }
+        }
+
         setIsLoading(true);
         try {
             const { createOnlineArtist } = await import('../firebase');
-            const newArtist = await createOnlineArtist(user.uid, onlineArtistName.trim(), onlineGenre.trim(), inviteCode.trim());
+            const newArtist = await createOnlineArtist(user.uid, trimmedName, onlineGenre.trim(), inviteCode.trim());
             if (newArtist) {
                 dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: newArtist } });
             }

@@ -141,12 +141,17 @@ const SpotifyView: React.FC = () => {
             const reader = new FileReader();
             reader.onloadend = async () => {
                 const newImage = reader.result as string;
-                if (gameState.careerMode === 'online') {
-                    const { updateOnlineArtistProfileImage } = await import('../firebase');
-                    await updateOnlineArtistProfileImage(activeArtist.id, newImage);
-                }
                 dispatch({ type: 'UPDATE_ARTIST_IMAGE', payload: { artistId: activeArtist.id, newImage } });
                 dispatch({ type: 'CHANGE_PROFILE_IMAGE', payload: { newImage } });
+                
+                if (gameState.careerMode === 'online' && newImage.length < 500) {
+                    try {
+                        const { updateOnlineArtistProfileImage } = await import('../firebase');
+                        await updateOnlineArtistProfileImage(activeArtist.id, newImage);
+                    } catch(err) {
+                        console.error('Failed to push to firebase', err);
+                    }
+                }
             };
             reader.readAsDataURL(file);
         }
