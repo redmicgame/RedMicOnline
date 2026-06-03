@@ -35,7 +35,7 @@ export const useOnlinePush = () => {
                 if (!artistProfile) return;
 
                 // Push artist entity
-                await set(ref(db, `artists/${artistProfile.id}`), {
+                await set(ref(db, `artists_v2/${artistProfile.id}`), {
                     id: artistProfile.id,
                     name: artistProfile.name,
                     age: 'age' in artistProfile ? artistProfile.age : 20,

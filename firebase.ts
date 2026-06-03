@@ -94,7 +94,7 @@ export const createOnlineArtist = async (userId: string, name: string, genre: st
             throw new Error(`The name "${name}" is reserved. You must enter a valid invite code to use it.`);
         }
 
-        const artistsRef = ref(db, 'artists');
+        const artistsRef = ref(db, 'artists_v2');
         const snapshot = await get(artistsRef);
         if (snapshot.exists()) {
             let nameTaken = false;
@@ -157,7 +157,7 @@ export const getArtistData = async (artistId: string) => {
 
 export const updateOnlineArtistProfileImage = async (artistId: string, image: string) => {
     try {
-        const artistRef = ref(db, `artists/${artistId}`);
+        const artistRef = ref(db, `artists_v2/${artistId}`);
         const snapshot = await get(artistRef);
         if (snapshot.exists()) {
             await set(artistRef, {
@@ -173,7 +173,7 @@ export const updateOnlineArtistProfileImage = async (artistId: string, image: st
 
 export const updateOnlineArtistName = async (artistId: string, name: string) => {
     try {
-        const artistRef = ref(db, `artists/${artistId}`);
+        const artistRef = ref(db, `artists_v2/${artistId}`);
         const snapshot = await get(artistRef);
         if (snapshot.exists()) {
             await set(artistRef, {
@@ -189,7 +189,7 @@ export const updateOnlineArtistName = async (artistId: string, name: string) => 
 
 export const updateOnlineArtistFeaturePrice = async (artistId: string, price: number) => {
     try {
-        const artistRef = ref(db, `artists/${artistId}`);
+        const artistRef = ref(db, `artists_v2/${artistId}`);
         const snapshot = await get(artistRef);
         if (snapshot.exists()) {
             await set(artistRef, {
@@ -205,7 +205,7 @@ export const updateOnlineArtistFeaturePrice = async (artistId: string, price: nu
 
 export const getAllOnlineArtists = async () => {
     try {
-        const artistsRef = ref(db, 'artists');
+        const artistsRef = ref(db, 'artists_v2');
         const snapshot = await get(artistsRef);
         const artists: any[] = [];
         if (snapshot.exists()) {
@@ -273,9 +273,9 @@ export const saveGameToCloud = async (userId: string, saveId: string | null, gam
 // X posts
 export const publishXPost = async (authorId: string, authorName: string, text: string, postId?: string) => {
     try {
-        const actualPostId = postId || push(ref(db, 'x_posts')).key;
+        const actualPostId = postId || push(ref(db, 'x_posts_v2')).key;
         if (!actualPostId) return;
-        const postsRef = ref(db, `x_posts/${actualPostId}`);
+        const postsRef = ref(db, `x_posts_v2/${actualPostId}`);
         await set(postsRef, {
             id: actualPostId,
             authorId,

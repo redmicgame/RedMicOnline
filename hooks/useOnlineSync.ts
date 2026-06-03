@@ -12,7 +12,7 @@ export const useOnlineSync = () => {
         const EPOCH = 1780344837000;
 
         // Listen to top posts
-        const postsQuery = query(ref(db, 'x_posts'), orderByChild('createdAt'), limitToLast(50));
+        const postsQuery = query(ref(db, 'x_posts_v2'), orderByChild('createdAt'), limitToLast(50));
         const unsubPosts = onValue(postsQuery, (snapshot) => {
             let posts: any[] = [];
             if (snapshot.exists()) {
@@ -52,7 +52,7 @@ export const useOnlineSync = () => {
         }, (error) => console.error("Error syncing albums:", error));
 
         // Listen to artists
-        const artistsQuery = query(ref(db, 'artists'), orderByChild('createdAt'), limitToLast(50));
+        const artistsQuery = query(ref(db, 'artists_v2'), orderByChild('createdAt'), limitToLast(50));
         const unsubArtists = onValue(artistsQuery, (snapshot) => {
             let artists: any[] = [];
             if (snapshot.exists()) {
