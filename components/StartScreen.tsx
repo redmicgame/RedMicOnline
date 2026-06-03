@@ -120,13 +120,40 @@ const StartScreen: React.FC = () => {
 
         setIsLoading(true);
         try {
-            const { createOnlineArtist } = await import('../firebase');
-            const newArtist = await createOnlineArtist(user.uid, trimmedName, onlineGenre.trim(), inviteCode.trim());
-            if (newArtist) {
-                dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: newArtist } });
+            if (lockedArtists[trimmedName]) {
+                const { resumeOnlineArtist, createOnlineArtist } = await import('../firebase');
+                try {
+                    const existingArtist = await resumeOnlineArtist(user.uid, trimmedName);
+                    if (existingArtist) {
+                        dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: existingArtist } });
+                    }
+                } catch (resumeErr) {
+                    const newArtist = await createOnlineArtist(user.uid, trimmedName, onlineGenre.trim(), inviteCode.trim());
+                    if (newArtist) {
+                        dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: newArtist } });
+                    }
+                }
+            } else {
+                const { createOnlineArtist, resumeOnlineArtist } = await import('../firebase');
+                try {
+                    const newArtist = await createOnlineArtist(user.uid, trimmedName, onlineGenre.trim(), inviteCode.trim());
+                    if (newArtist) {
+                        dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: newArtist } });
+                    }
+                } catch (createErr: any) {
+                    if (createErr.message.includes('already taken')) {
+                        // Try to resume instead if we own it
+                        const existingArtist = await resumeOnlineArtist(user.uid, trimmedName);
+                        if (existingArtist) {
+                            dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: existingArtist } });
+                        }
+                    } else {
+                        throw createErr;
+                    }
+                }
             }
         } catch (err: any) {
-            setError('Failed to create online artist: ' + err.message);
+            setError('Failed: ' + err.message);
         }
         setIsLoading(false);
     };

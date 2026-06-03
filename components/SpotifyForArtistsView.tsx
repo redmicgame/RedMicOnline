@@ -736,10 +736,12 @@ const S4AProfile: React.FC = () => {
                     <img src={activeArtist.image} alt={activeArtist.name} className="w-16 h-16 rounded-full object-cover shadow-sm bg-zinc-300" />
                     <div>
                         <p className="text-xs text-zinc-500 mb-2">Update your artist profile picture across the platform.</p>
-                        <form onSubmit={(e) => { e.preventDefault(); }} className="flex items-center gap-2">
+                        <form onSubmit={(e) => { e.preventDefault(); }} className="flex items-center gap-2 mt-2">
                             <input 
+                                id="sfa-profile-upload"
                                 type="file" 
                                 accept="image/*"
+                                className="hidden"
                                 onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
@@ -749,15 +751,22 @@ const S4AProfile: React.FC = () => {
                                             dispatch({ type: 'CHANGE_PROFILE_IMAGE', payload: { newImage: newUrl } });
                                             // "should only be you see" -> do not push base64 to Firebase
                                             if (gameState.careerMode === 'online' && newUrl.length < 500) {
-                                                const { updateOnlineArtistProfileImage } = await import('../firebase');
-                                                await updateOnlineArtistProfileImage(activeArtist.id, newUrl);
+                                                try {
+                                                    const { updateOnlineArtistProfileImage } = await import('../firebase');
+                                                    await updateOnlineArtistProfileImage(activeArtist.id, newUrl);
+                                                } catch(err) {
+                                                    console.warn(err);
+                                                }
                                             }
                                         };
                                         reader.readAsDataURL(file);
                                     }
                                 }} 
-                                className="block w-48 text-sm text-zinc-500 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-zinc-200 file:text-black hover:file:bg-zinc-300" 
                             />
+                            <label htmlFor="sfa-profile-upload" className="bg-black text-white text-sm font-semibold px-4 py-2 rounded-full cursor-pointer hover:bg-zinc-800 transition-colors">
+                                Upload Photo
+                            </label>
+                            <span className="text-xs text-zinc-400">Only visible to you</span>
                         </form>
                     </div>
                 </div>

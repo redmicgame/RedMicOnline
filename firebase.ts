@@ -87,6 +87,50 @@ export const getOrCreateUser = async (user: any) => {
     }
 }
 
+export const resumeOnlineArtist = async (userId: string, name: string) => {
+    try {
+        const artistsRef = ref(db, 'artists_v3');
+        const snapshot = await get(artistsRef);
+        let foundArtist: any = null;
+        let foundArtistId: string = '';
+        if (snapshot.exists()) {
+            snapshot.forEach((child) => {
+                if (child.val().name === name) {
+                    foundArtist = child.val();
+                    foundArtistId = child.key as string;
+                }
+            });
+        }
+        
+        if (foundArtist) {
+            // Check if this artist is protected or if the user owns it
+            const isOwner = foundArtist.ownerId === userId;
+            const isProtected = ['Melanie Martinez', 'Doja Cat', 'Tinashe'].includes(name);
+            
+            if (!isOwner && !isProtected) {
+                throw new Error(`The artist name "${name}" is registered to another user.`);
+            }
+
+            // Update user to point to this artist
+            const userPath = `users/${userId}`;
+            const userSnapshot = await get(child(ref(db), userPath));
+            if(userSnapshot.exists()) {
+                const userData = userSnapshot.val();
+                await set(ref(db, userPath), {
+                    ...userData,
+                    activeArtistId: foundArtistId,
+                    updatedAt: Date.now()
+                });
+            }
+            return { id: foundArtistId, ...foundArtist };
+        } else {
+            throw new Error(`The artist name "${name}" does not exist to resume.`);
+        }
+    } catch (err: any) {
+        throw new Error(err.message);
+    }
+}
+
 export const createOnlineArtist = async (userId: string, name: string, genre: string, code?: string) => {
     try {
         const uppercaseName = name.toUpperCase();
