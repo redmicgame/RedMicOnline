@@ -46,19 +46,15 @@ export const useOnlinePush = () => {
                     monthlyListeners: artistData.monthlyListeners || 0,
                     money: artistData.money || 0,
                     genre: artistData.songs[0]?.genre || "Pop",
-                    totalAwards: (artistData.grammyHistory?.filter(a => a.isWinner).length || 0) + (artistData.amaHistory?.filter(a => a.isWinner).length || 0) + (artistData.vmaHistory?.filter(a => a.isWinner).length || 0) + (artistData.oscarHistory?.filter(a => a.isWinner).length || 0),
+                    totalAwards: (artistData.grammyHistory?.filter(a => a.isWinner).length || 0) + (artistData.amaHistory?.filter(a => a.isWinner).length || 0),
                     awards: {
                         grammys: artistData.grammyHistory?.filter(a => a.isWinner) || [],
-                        amas: artistData.amaHistory?.filter(a => a.isWinner) || [],
-                        vmas: artistData.vmaHistory?.filter(a => a.isWinner) || [],
-                        oscars: artistData.oscarHistory?.filter(a => a.isWinner) || []
+                        amas: artistData.amaHistory?.filter(a => a.isWinner) || []
                     },
                     labelSubmissions: artistData.labelSubmissions?.map(sub => ({
                         status: sub.status,
-                        hasCountdownPage: sub.hasCountdownPage,
-                        projectReleaseDate: sub.projectReleaseDate,
-                        itemId: sub.itemId,
-                        itemName: sub.itemName,
+                        hasCountdownPage: sub.hasCountdownPage || false,
+                        projectReleaseDate: sub.projectReleaseDate || null,
                         release: sub.release ? {
                             id: sub.release.id,
                             title: sub.release.title,
@@ -93,7 +89,7 @@ export const useOnlinePush = () => {
 
                 // Push released albums
                 for (const release of artistData.releases) {
-                    if ((release.type === 'Album' || release.type === 'EP') && release.isReleased) {
+                    if (release.type === 'Album' || release.type === 'EP') {
                         const albumChartEntry = gameState.billboardTopAlbums?.find(a => a.albumId === release.id);
                         const weeklyActivity = albumChartEntry ? albumChartEntry.weeklyActivity : 0;
                         const weeklySalesNum = albumChartEntry ? (albumChartEntry.weeklySales || 0) : 0;

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { getDatabase, ref, set, get, child, push, remove, onValue, query as rtdbQuery, orderByChild, equalTo, limitToLast, serverTimestamp } from 'firebase/database';
+import { getDatabase, ref, set, get, update, child, push, remove, onValue, query as rtdbQuery, orderByChild, equalTo, limitToLast, serverTimestamp } from 'firebase/database';
 import firebaseConfigRaw from './firebase-applet-config.json';
 
 const firebaseConfig = {
