@@ -12,7 +12,7 @@ export const useOnlineSync = () => {
         const EPOCH = 1780344837000;
 
         // Listen to top posts
-        const postsQuery = query(ref(db, 'x_posts_v5'), orderByChild('createdAt'), limitToLast(50));
+        const postsQuery = query(ref(db, 'x_posts_v6'), orderByChild('createdAt'), limitToLast(50));
         const unsubPosts = onValue(postsQuery, (snapshot) => {
             let posts: any[] = [];
             if (snapshot.exists()) {
@@ -24,7 +24,7 @@ export const useOnlineSync = () => {
         }, (error) => console.error("Error syncing posts:", error));
 
         // Listen to songs (sort by lastWeekStreams)
-        const songsQuery = query(ref(db, 'online_songs_v5'), orderByChild('weeklyStreams'), limitToLast(100));
+        const songsQuery = query(ref(db, 'online_songs_v6'), orderByChild('weeklyStreams'), limitToLast(100));
         const unsubSongs = onValue(songsQuery, (snapshot) => {
             let songs: any[] = [];
             if (snapshot.exists()) {
@@ -37,7 +37,7 @@ export const useOnlineSync = () => {
         }, (error) => console.error("Error syncing songs:", error));
         
         // Listen to albums
-        const albumsQuery = query(ref(db, 'online_albums_v5'), orderByChild('weeklySales'), limitToLast(50));
+        const albumsQuery = query(ref(db, 'online_albums_v6'), orderByChild('weeklySales'), limitToLast(50));
         const unsubAlbums = onValue(albumsQuery, (snapshot) => {
             let albums: any[] = [];
             if (snapshot.exists()) {
@@ -52,7 +52,7 @@ export const useOnlineSync = () => {
         }, (error) => console.error("Error syncing albums:", error));
 
         // Listen to artists
-        const artistsQuery = query(ref(db, 'artists_v5'), orderByChild('createdAt'), limitToLast(50));
+        const artistsQuery = query(ref(db, 'artists_v6'), orderByChild('createdAt'), limitToLast(50));
         const unsubArtists = onValue(artistsQuery, (snapshot) => {
             let artists: any[] = [];
             if (snapshot.exists()) {

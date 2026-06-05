@@ -413,6 +413,10 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
     const { activeArtistData, gameState } = useGame();
     const { xPosts, xUsers } = activeArtistData!;
 
+    // Use global online posts if not offline
+    const isOnline = !gameState.offlineMode && gameState.onlinePosts;
+    const allPosts = isOnline ? gameState.onlinePosts! : xPosts;
+
     const [displayCount, setDisplayCount] = useState(20);
 
     const SYSTEM_USERS_FALLBACK: Record<string, XUser> = {
@@ -449,7 +453,7 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
         return found || SYSTEM_USERS_FALLBACK[id];
     };
 
-    const sortedPosts = [...xPosts].sort((a, b) => {
+    const sortedPosts = [...allPosts].sort((a, b) => {
         const timeA = a.createdAt || (a.date.year * 52 + a.date.week);
         const timeB = b.createdAt || (b.date.year * 52 + b.date.week);
         return timeB - timeA;
@@ -1073,7 +1077,7 @@ const XView: React.FC = () => {
                         setQuotePostTarget(null);
                         
                         // We are always in online mode now, but check if we're online
-                        if (gameState.activeArtistId && gameState.careerMode === 'online') {
+                        if (gameState.activeArtistId && !gameState.offlineMode) {
                             try {
                                 const { publishXPost } = await import('../firebase');
                                 await publishXPost(gameState.activeArtistId, playerUser?.name || 'Unknown', payload.content || '', newPostId);

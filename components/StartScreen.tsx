@@ -8,7 +8,7 @@ const StartScreen: React.FC = () => {
     const { dispatch } = useGame();
     const { user, login } = useFirebase();
 
-    const [mode, setMode] = useState<'classic' | 'online'>('classic');
+    const [mode, setMode] = useState<'classic' | 'online'>('online');
     
     // Classic specific state
     const [artistName, setArtistName] = useState('');
@@ -202,13 +202,139 @@ const StartScreen: React.FC = () => {
                 <h1 className="text-4xl font-black text-center text-red-500 mb-2">RED MIC</h1>
                 <p className="text-center text-zinc-400 mb-6 font-semibold">THE MUSIC INDUSTRY SIMULATOR</p>
 
-                <div className="bg-red-900/40 border border-red-500/50 rounded-xl p-6 text-center shadow-lg mt-8">
-                    <span className="text-4xl block mb-4">🚧</span>
-                    <h3 className="text-xl font-bold text-white mb-2">Servers Locked</h3>
-                    <p className="text-zinc-300 text-sm leading-relaxed font-medium">
-                        Servers have been extremely overloaded.. Red Mic Online will return June 9th, saved data will still be there and servers will just be paused! Thank you for the support
-                    </p>
-                </div>
+
+
+                {error && (
+                    <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-bold px-4 py-2 rounded-lg mb-4 text-center">
+                        {error}
+                    </div>
+                )}
+
+                {showPasswordPopup && (
+                    <ConfirmationModal
+                        title={`Secure Artist: ${legacyArtistName}`}
+                        description="This artist is password protected. Please enter the invite code to resume."
+                        confirmText="Resume Career"
+                        cancelText="Cancel"
+                        onConfirm={async () => {
+                             setIsLoading(true);
+                             try {
+                                 const { resumeOnlineArtist } = await import('../firebase');
+                                 const existingArtist = await resumeOnlineArtist(user!.uid, legacyArtistName, inviteCode, true);
+                                 if (existingArtist) {
+                                      const { loadOnlineGameState } = await import('../firebase');
+                                      const savedState = await loadOnlineGameState(user!.uid);
+                                      if (savedState) {
+                                          dispatch({ type: 'LOAD_GAME', payload: savedState });
+                                      } else {
+                                          dispatch({ type: 'START_ONLINE_GAME', payload: { onlineArtist: existingArtist } });
+                                      }
+                                 }
+                                 setShowPasswordPopup(false);
+                             } catch(err: any) {
+                                  setError("Incorrect password.");
+                                  setShowPasswordPopup(false);
+                             }
+                             setIsLoading(false);
+                        }}
+                        onCancel={() => setShowPasswordPopup(false)}
+                    >
+                        <input
+                            type="password"
+                            placeholder="Invite Code / Password"
+                            value={inviteCode}
+                            onChange={e => setInviteCode(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 mt-4 focus:ring-2 focus:ring-red-500 text-white"
+                        />
+                    </ConfirmationModal>
+                )}
+
+
+
+                {mode === 'online' && (
+                    <form onSubmit={handleOnlineSubmit} className="space-y-4">
+                        {!user ? (
+                            <div className="text-center py-4 space-y-4">
+                                <p className="text-sm text-zinc-400 font-medium">To play the live MMO mode, you must sign in with Google.</p>
+                                <button type="button" onClick={login} className="w-full bg-white text-black hover:bg-zinc-200 font-bold py-3 px-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
+                                    Sign In with Google
+                                </button>
+                                <button type="button" onClick={handleWipeServer} className="mt-4 text-xs font-mono text-zinc-500 hover:text-red-400 opacity-50 hover:opacity-100">
+                                    [ DEV: SERVER STATUS ]
+                                </button>
+                            </div>
+                        ) : onlineProfile ? (
+                            <div className="text-center">
+                                <div className="w-24 h-24 mx-auto bg-zinc-800 rounded-full border-4 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] mb-4 overflow-hidden relative">
+                                    {onlineProfile.image ? 
+                                        <img src={onlineProfile.image} alt="Profile" className="w-full h-full object-cover" /> :
+                                        <div className="w-full h-full flex items-center justify-center text-3xl font-bold bg-zinc-700">{onlineProfile.name[0]}</div>
+                                    }
+                                    <div className="absolute top-1 right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-zinc-800"></div>
+                                </div>
+                                <h3 className="text-xl font-bold mb-1">{onlineProfile.name}</h3>
+                                <p className="text-emerald-400 text-sm font-semibold mb-6 flex items-center justify-center gap-2">
+                                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Linked to Live Servers
+                                </p>
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-900/50 transition-all hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest disabled:opacity-50"
+                                >
+                                    {isLoading ? 'LOADING SERVER...' : 'ENTER ONLINE SERVER'}
+                                </button>
+                                <p className="text-xs text-zinc-500 mt-4 max-w-xs mx-auto">
+                                    You are resuming an active live career. Your streams and balance have progressed while you were away.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="bg-emerald-900/20 border border-emerald-500/30 p-3 rounded-lg mb-4">
+                                    <h4 className="text-emerald-400 font-bold text-sm mb-1 flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                                        LIVE SEASONS ACTIVE
+                                    </h4>
+                                    <p className="text-xs text-zinc-300">
+                                        Compete against real players on global charts. Create your artist to enter the server. Features cost game cash, streams update globally.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-zinc-400 text-sm font-bold mb-2">Stage Name <span className="text-red-500">*</span></label>
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        maxLength={25}
+                                        placeholder="Globally Unique Name"
+                                        value={onlineArtistName}
+                                        onChange={(e) => setOnlineArtistName(e.target.value)}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-lg font-semibold"
+                                    />
+                                    <p className="text-xs text-zinc-500 mt-1">Must be unique on the server.</p>
+                                </div>
+                                
+                                <div>
+                                     <label className="block text-zinc-400 text-sm font-bold mb-2">Set Password (Optional)</label>
+                                     <input
+                                         type="text"
+                                         placeholder="Protect your name"
+                                         value={inviteCode}
+                                         onChange={(e) => setInviteCode(e.target.value)}
+                                         className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-lg font-semibold"
+                                     />
+                                     <p className="text-xs text-zinc-500 mt-1">Set a password to let you re-claim this name on another device.</p>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-900/50 transition-all hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest mt-2 disabled:opacity-50"
+                                >
+                                    {isLoading ? 'SYNCING...' : 'CREATE ONLINE ARTIST'}
+                                </button>
+                            </div>
+                        )}
+                    </form>
+                )}
             </div>
         </div>
     );

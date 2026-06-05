@@ -18,6 +18,7 @@ import PromoteView from './components/PromoteView';
 import BillboardView from './components/BillboardView';
 import BillboardAlbumsView from './components/BillboardAlbumsView';
 import SpotifyChartView from './components/SpotifyChartView';
+import StoreView from './components/StoreView';
 import YouTubeVideoDetailView from './components/YouTubeVideoDetailView';
 import YouTubeStudioView from './components/YouTubeStudioView';
 import GigsView from './components/GigsView';
@@ -145,6 +146,8 @@ const AppContent: React.FC = () => {
                 return <YouTubeStudioView />;
             case 'inbox':
                 return <InboxView />;
+            case 'store':
+                return <StoreView />;
             case 'catalog':
                 return <CatalogView />;
             case 'promote':

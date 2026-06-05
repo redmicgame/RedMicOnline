@@ -11,6 +11,7 @@ const XNewMessageView: React.FC = () => {
     const availableUsers = useMemo(() => {
         const users: Array<{ id: string, name: string, avatar?: string, isOnlinePlayer: boolean }> = [];
         
+        // We want to allow DMing online artists if available
         if (gameState.onlineArtists) {
              gameState.onlineArtists.forEach(oa => {
                  if (oa.id !== gameState.activeArtistId) {
@@ -23,16 +24,6 @@ const XNewMessageView: React.FC = () => {
                  }
              });
         }
-        
-        // Also add NPCs
-        gameState.npcs.forEach(npc => {
-            users.push({
-                id: npc.id,
-                name: npc.name,
-                avatar: npc.image || 'https://ui-avatars.com/api/?background=random&name=' + encodeURIComponent(npc.name),
-                isOnlinePlayer: false
-            });
-        });
         
         return users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()));
     }, [gameState.onlineArtists, gameState.npcs, search, gameState.activeArtistId]);

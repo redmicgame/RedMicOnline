@@ -5,13 +5,9 @@ import { XChat, XUser, XMessage } from '../types';
 import ArrowLeftIcon from './icons/ArrowLeftIcon';
 import PlusCircleIcon from './icons/PlusCircleIcon';
 import HeartIcon from './icons/HeartIcon';
-import { GoogleGenAI } from '@google/genai';
 
-const getAI = () => {
-    const key = process.env.API_KEY;
-    if (!key) throw new Error("API key not configured");
-    return new GoogleGenAI({ apiKey: key });
-};
+
+
 
 const MessageBubble: React.FC<{ message: XMessage, author: XUser | undefined, isPlayer: boolean, isGroup: boolean }> = ({ message, author, isPlayer, isGroup }) => {
     if (!author) return null;
@@ -124,7 +120,6 @@ const XChatView: React.FC = () => {
                 : `You are a music artist. Your username is ${replier.name}. You are direct messaging another artist, ${activeArtist?.name}. Be realistic to how artists talk to each other (collaborations, hangouts, praising work). Use casual internet slang.`;
     
             let aiReplyText = '';
-            if (gameState.offlineMode || !activeArtistData?.redMicPro?.unlocked) {
                 const genericReplies = [
                     "Interesting...", 
                     "Wow!", 
@@ -137,30 +132,6 @@ const XChatView: React.FC = () => {
                     "Hmm..."
                 ];
                 aiReplyText = genericReplies[Math.floor(Math.random() * genericReplies.length)];
-            } else {
-                const prompt = `This is a chat conversation with the music artist ${activeArtist?.name}.
----
-PERSONA: ${persona}
----
-CHAT HISTORY (most recent messages are last):
-${chatHistory}
-${playerUser.name}: ${currentMessageText}
----
-Based on your persona and the chat history, write a short, realistic reply as ${replier.name}. Your reply should be a single text message. Do not include your name in the reply itself.`;
-        
-                const aiClient = getAI();
-                const response = await aiClient.models.generateContent({
-                  model: 'gemini-2.5-flash',
-                  contents: prompt,
-                  config: {
-                      stopSequences: ['\n'],
-                      maxOutputTokens: 50,
-                      temperature: 0.9,
-                  }
-                });
-        
-                aiReplyText = response.text.trim();
-            }
     
             if (aiReplyText) {
                 const aiMessage: XMessage = {

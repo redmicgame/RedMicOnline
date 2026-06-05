@@ -121,6 +121,8 @@ const VerifiedModal: React.FC<{ isOpen: boolean; onClose: () => void; sinceYear:
 };
 
 
+import SpotifyOtherProfileView from './SpotifyOtherProfileView';
+
 const SpotifyView: React.FC = () => {
     const { gameState, dispatch, activeArtist, activeArtistData, allPlayerArtists } = useGame();
     const [view, setView] = useState<'profile' | 'discography' | 'releaseDetail' | 'playlistDetail'>('profile');
@@ -130,6 +132,11 @@ const SpotifyView: React.FC = () => {
     const [isPopularExpanded, setIsPopularExpanded] = useState(false);
     const [showVerifiedModal, setShowVerifiedModal] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Render other profile if viewing someone else
+    if (gameState.selectedSpotifyArtistId && activeArtist && gameState.selectedSpotifyArtistId !== activeArtist.id) {
+        return <SpotifyOtherProfileView artistId={gameState.selectedSpotifyArtistId} />;
+    }
 
     if (!activeArtist || !activeArtistData) return null;
     const { monthlyListeners, songs, releases, artistPick, labelSubmissions } = activeArtistData;
@@ -263,6 +270,31 @@ const SpotifyView: React.FC = () => {
             };
         });
     }, [gameState.spotifyPlaylists, activeArtist.name]);
+    
+    const fansAlsoLike = useMemo(() => {
+        const similar: any[] = [];
+        const basePopularity = monthlyListeners || activeArtistData.popularity * 10000;
+        
+        // Only Find Online Players
+        if (gameState.onlineArtists && gameState.careerMode === 'online') {
+            gameState.onlineArtists.forEach(oa => {
+                 if (oa.id !== activeArtist.id) {
+                     const listeners = oa.popularity * 1000;
+                     const diff = Math.abs(listeners - basePopularity);
+                     if (diff < basePopularity * 2.0 || diff < 1000000) {
+                         similar.push({
+                             id: oa.id,
+                             name: oa.name,
+                             image: oa.image || oa.avatar || `https://ui-avatars.com/api/?background=random&name=${encodeURIComponent(oa.name)}`,
+                             listeners
+                         });
+                     }
+                 }
+            });
+        }
+        
+        return similar.sort((a,b) => Math.abs(a.listeners - basePopularity) - Math.abs(b.listeners - basePopularity)).slice(0, 6);
+    }, [monthlyListeners, activeArtistData.popularity, gameState.npcs, gameState.onlineArtists, gameState.careerMode, activeArtist.id]);
     
     const isVerified = monthlyListeners >= 1000000 || appearsOnPlaylists.length > 0;
     const sinceYear = useMemo(() => releases.length > 0 ? Math.min(...releases.map(r => r.releaseDate.year)) : date.year, [releases, date.year]);
@@ -470,6 +502,23 @@ const SpotifyView: React.FC = () => {
                                         dispatch({ type: 'CHANGE_VIEW', payload: 'spotifyAlbumCountdown' });
                                     }}
                                 />
+                            ))}
+                        </div>
+                    </div>
+                )}
+                
+                {/* Fans Also Like */}
+                {fansAlsoLike.length > 0 && (
+                    <div className="space-y-4">
+                        <h2 className="text-2xl font-bold">Fans also like</h2>
+                        <div className="flex overflow-x-auto gap-4 pb-4 snap-x">
+                            {fansAlsoLike.map(fanArtist => (
+                                <div key={fanArtist.id} onClick={() => dispatch({ type: 'VIEW_SPOTIFY_PROFILE', payload: fanArtist.id })} className="min-w-[140px] max-w-[140px] flex-shrink-0 snap-start bg-zinc-800/40 p-3 rounded-md hover:bg-zinc-800 transition-colors cursor-pointer group text-center">
+                                    <div className="relative w-full aspect-square bg-[#282828] rounded-full mb-3 shadow-lg overflow-hidden">
+                                        <img src={fanArtist.image} alt={fanArtist.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <h3 className="font-bold text-sm truncate">{fanArtist.name}</h3>
+                                </div>
                             ))}
                         </div>
                     </div>

@@ -627,6 +627,19 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
                 hype: onlineArtist.energy, // map energy to hype roughly
                 popularity: onlineArtist.popularity,
                 inbox: [welcomeEmail],
+                xUsers: [
+                    {
+                        id: mappedArtist.id,
+                        name: mappedArtist.name,
+                        username: mappedArtist.name.replace(/\s/g, '').toLowerCase(),
+                        avatar: mappedArtist.image,
+                        isVerified: true,
+                        isPlayer: true,
+                        bio: `Official account. Leader of the ${mappedArtist.fandomName}.`,
+                        followersCount: onlineArtist.popularity * 1000,
+                        followingCount: 0,
+                    }
+                ]
             };
 
             const npcs = generateNpcs(600, [], undefined, [mappedArtist.name]);
@@ -6628,6 +6641,8 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
         }
         case 'VIEW_X_PROFILE':
             return { ...state, selectedXUserId: action.payload, currentView: 'xProfile' };
+        case 'VIEW_SPOTIFY_PROFILE':
+            return { ...state, selectedSpotifyArtistId: action.payload, currentView: 'spotify' };
         case 'VIEW_X_CHAT':
             return { ...state, selectedXChatId: action.payload, currentView: 'xChatDetail' };
         case 'FOLLOW_X_USER': {

@@ -27,6 +27,10 @@ const MiscTab: React.FC = () => {
         dispatch({ type: 'CHANGE_VIEW', payload: 'inbox' });
     };
 
+    const handleStoreClick = () => {
+        dispatch({ type: 'CHANGE_VIEW', payload: 'store' });
+    };
+
     const handleEndCareer = async () => {
         await db.saves.delete(getActiveSaveId());
         dispatch({ type: 'RESET_GAME' });
@@ -192,6 +196,14 @@ const MiscTab: React.FC = () => {
                         )}
                     </div>
                     <ChevronRightIcon className="w-6 h-6 text-zinc-500" />
+                </button>
+
+                <button onClick={handleStoreClick} className="w-full bg-gradient-to-r from-zinc-800 to-pink-900/30 p-4 rounded-lg text-left hover:from-zinc-700 hover:to-pink-800/40 transition-colors border border-pink-500/20 flex justify-between items-center shadow-sm">
+                    <div>
+                        <h3 className="font-bold text-lg text-pink-400">Store</h3>
+                        <p className="text-sm text-zinc-300">Buy popularity and game cash</p>
+                    </div>
+                    <ChevronRightIcon className="w-6 h-6 text-pink-500" />
                 </button>
                 
                 <button onClick={() => dispatch({ type: 'CHANGE_VIEW', payload: 'achievements' })} className="w-full bg-zinc-800 p-4 rounded-lg text-left hover:bg-zinc-700 transition-colors flex justify-between items-center">

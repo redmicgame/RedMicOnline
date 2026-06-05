@@ -252,13 +252,18 @@ const AchievementsView: React.FC = () => {
                                     ? [...onlineArtists].sort((a: any, b: any) => (b.monthlyListeners || 0) - (a.monthlyListeners || 0))[0]
                                     : null;
 
+                                const sortedByAge = [...onlineSongs].sort((a: any, b: any) => (a.createdAt || 0) - (b.createdAt || 0));
+                                const first10m = sortedByAge.find(s => (s.allTimeStreams || 0) >= 10000000);
+                                const first100m = sortedByAge.find(s => (s.allTimeStreams || 0) >= 100000000);
+                                const first1B = sortedByAge.find(s => (s.allTimeStreams || 0) >= 1000000000);
+
                                 return (
                                     <>
                                         {mostStreamedGlobalSong && (
                                             <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-emerald-500/30 p-4 rounded-xl flex items-center gap-4">
                                                 <img src={mostStreamedGlobalSong.coverArt || 'https://ui-avatars.com/api/?name=Unknown'} alt="Most streamed" className="w-16 h-16 rounded-md shadow object-cover" />
                                                 <div className="min-w-0 flex-grow">
-                                                    <p className="text-xs font-bold text-emerald-400 uppercase">Globally Most Streamed Song</p>
+                                                    <p className="text-xs font-bold text-emerald-400 uppercase">Globally Most Streamed</p>
                                                     <h3 className="text-lg font-bold truncate text-white">{mostStreamedGlobalSong.title}</h3>
                                                     <p className="text-sm text-zinc-400 truncate">{mostStreamedGlobalSong.artistName}</p>
                                                     <p className="font-mono text-sm text-white mt-1">{formatNumber(mostStreamedGlobalSong.allTimeStreams || 0)} streams</p>
@@ -273,6 +278,39 @@ const AchievementsView: React.FC = () => {
                                                     <h3 className="text-lg font-bold truncate text-white">{peakListenersGlobal.name}</h3>
                                                     <p className="font-mono text-sm text-white mt-1">{formatNumber(peakListenersGlobal.monthlyListeners || 0)} listeners</p>
                                                 </div>
+                                            </div>
+                                        )}
+                                        {first10m && (
+                                            <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-yellow-500/30 p-4 rounded-xl flex items-center gap-4">
+                                                <img src={first10m.coverArt || 'https://ui-avatars.com/api/?name=Unknown'} alt="First 10M" className="w-16 h-16 rounded-md shadow object-cover" />
+                                                <div className="min-w-0 flex-grow">
+                                                    <p className="text-xs font-bold text-yellow-400 uppercase">First to 10M Streams</p>
+                                                    <h3 className="text-lg font-bold truncate text-white">{first10m.title}</h3>
+                                                    <p className="text-sm text-zinc-400 truncate">{first10m.artistName}</p>
+                                                </div>
+                                                <div className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center font-bold text-xs ring-1 ring-yellow-500/50">10M</div>
+                                            </div>
+                                        )}
+                                        {first100m && (
+                                            <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-purple-500/30 p-4 rounded-xl flex items-center gap-4">
+                                                <img src={first100m.coverArt || 'https://ui-avatars.com/api/?name=Unknown'} alt="First 100M" className="w-16 h-16 rounded-md shadow object-cover" />
+                                                <div className="min-w-0 flex-grow">
+                                                    <p className="text-xs font-bold text-purple-400 uppercase">First to 100M Streams</p>
+                                                    <h3 className="text-lg font-bold truncate text-white">{first100m.title}</h3>
+                                                    <p className="text-sm text-zinc-400 truncate">{first100m.artistName}</p>
+                                                </div>
+                                                <div className="w-8 h-8 rounded-full bg-purple-500/20 text-purple-500 flex items-center justify-center font-bold text-[10px] ring-1 ring-purple-500/50">100M</div>
+                                            </div>
+                                        )}
+                                        {first1B && (
+                                            <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-pink-500/30 p-4 rounded-xl flex items-center gap-4">
+                                                <img src={first1B.coverArt || 'https://ui-avatars.com/api/?name=Unknown'} alt="First 1B" className="w-16 h-16 rounded-md shadow object-cover" />
+                                                <div className="min-w-0 flex-grow">
+                                                    <p className="text-xs font-bold text-pink-400 uppercase">First to 1B Streams</p>
+                                                    <h3 className="text-lg font-bold truncate text-white">{first1B.title}</h3>
+                                                    <p className="text-sm text-zinc-400 truncate">{first1B.artistName}</p>
+                                                </div>
+                                                <div className="w-8 h-8 rounded-full bg-pink-500/20 text-pink-500 flex items-center justify-center font-bold text-xs ring-1 ring-pink-500/50">1B</div>
                                             </div>
                                         )}
                                     </>
