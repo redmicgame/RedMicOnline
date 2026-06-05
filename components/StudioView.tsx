@@ -101,14 +101,15 @@ const StudioView: React.FC = () => {
     const potentialEngineers = useMemo(() => generateRandomNames(15).sort(), []);
     const potentialAnR = useMemo(() => generateRandomNames(15).sort(), []);
 
-    const handleCoverArtUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleCoverArtUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setCoverArt(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+            try {
+                const { resizeImage } = await import('../utils/imageUtils');
+                const result = await resizeImage(e.target.files[0]);
+                setCoverArt(result);
+            } catch (err) {
+                console.error(err);
+            }
         }
     };
 

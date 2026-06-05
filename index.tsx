@@ -36,10 +36,11 @@ window.FileReader.prototype.readAsDataURL = function(file: Blob | File) {
             // Inject scaled result into reader
             Object.defineProperty(this, 'result', { value: dataUrl, writable: false, configurable: true });
             
-            // Trigger load event
-            const event = new ProgressEvent('load');
+            // Trigger load and loadend events
             if (this.onload) this.onload({ target: this } as any);
-            this.dispatchEvent(event);
+            this.dispatchEvent(new ProgressEvent('load'));
+            if (this.onloadend) this.onloadend({ target: this } as any);
+            this.dispatchEvent(new ProgressEvent('loadend'));
         };
         img.onerror = () => {
             URL.revokeObjectURL(objectUrl);

@@ -747,17 +747,31 @@ const S4AProfile: React.FC = () => {
                                     if (file) {
                                         const reader = new FileReader();
                                         reader.onloadend = async () => {
-                                            const newUrl = reader.result as string;
-                                            dispatch({ type: 'CHANGE_PROFILE_IMAGE', payload: { newImage: newUrl } });
-                                            // "should only be you see" -> do not push base64 to Firebase
-                                            if (gameState.careerMode === 'online' && newUrl.length < 500) {
-                                                try {
-                                                    const { updateOnlineArtistProfileImage } = await import('../firebase');
-                                                    await updateOnlineArtistProfileImage(activeArtist.id, newUrl);
-                                                } catch(err) {
-                                                    console.warn(err);
-                                                }
+                                        const newUrl = reader.result as string;
+                                        dispatch({ type: 'CHANGE_PROFILE_IMAGE', payload: { newImage: newUrl } });
+                                        
+                                        if (gameState.careerMode === 'online') {
+                                            try {
+                                                const { updateOnlineArtistProfileImage } = await import('../firebase');
+                                                // Shrinking the image for online to save space
+                                                const img = new Image();
+                                                img.onload = async () => {
+                                                    const canvas = document.createElement('canvas');
+                                                    const MAX_SIZE = 256;
+                                                    let w = img.width;
+                                                    let h = img.height;
+                                                    if (w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; }
+                                                    if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; }
+                                                    canvas.width = w; canvas.height = h;
+                                                    canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
+                                                    const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
+                                                    await updateOnlineArtistProfileImage(activeArtist.id, compressedUrl);
+                                                };
+                                                img.src = newUrl;
+                                            } catch(err) {
+                                                console.warn(err);
                                             }
+                                        }
                                         };
                                         reader.readAsDataURL(file);
                                     }

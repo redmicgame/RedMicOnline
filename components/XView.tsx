@@ -414,8 +414,7 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
     const { xPosts, xUsers } = activeArtistData!;
 
     // Use global online posts if not offline
-    const isOnline = !gameState.offlineMode && gameState.onlinePosts;
-    const allPosts = isOnline ? gameState.onlinePosts! : xPosts;
+    const allPosts = xPosts;
 
     const [displayCount, setDisplayCount] = useState(20);
 

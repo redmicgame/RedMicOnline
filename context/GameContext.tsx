@@ -6999,6 +6999,7 @@ const gameReducerInternal = (state: GameState, action: GameAction): GameState =>
 
              return {
                  ...state,
+                 onlinePosts: syncedPosts,
                  artistsData: {
                      ...state.artistsData,
                      [state.activeArtistId]: {

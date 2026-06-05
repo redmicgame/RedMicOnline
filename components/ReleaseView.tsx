@@ -80,14 +80,13 @@ const ReleaseView: React.FC = () => {
         setSelectedSongIds(newSelection);
     };
 
-    const handleDeluxeCoverArtUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleDeluxeCoverArtUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setDeluxeCoverArt(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+            try {
+                const { resizeImage } = await import('../utils/imageUtils');
+                const result = await resizeImage(e.target.files[0]);
+                setDeluxeCoverArt(result);
+            } catch(e) { console.error(e); }
         }
     };
 
