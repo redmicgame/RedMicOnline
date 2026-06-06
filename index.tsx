@@ -33,14 +33,12 @@ window.FileReader.prototype.readAsDataURL = function(file: Blob | File) {
             const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
             URL.revokeObjectURL(objectUrl);
             
-            // Inject scaled result into reader
-            Object.defineProperty(this, 'result', { value: dataUrl, writable: false, configurable: true });
-            
-            // Trigger load and loadend events
-            if (this.onload) this.onload({ target: this } as any);
-            this.dispatchEvent(new ProgressEvent('load'));
-            if (this.onloadend) this.onloadend({ target: this } as any);
-            this.dispatchEvent(new ProgressEvent('loadend'));
+            // Delegate natively by converting data URL to Blob and invoking original reader
+            fetch(dataUrl).then(res => res.blob()).then(blob => {
+                originalReadAsDataURL.call(this, blob);
+            }).catch(() => {
+                originalReadAsDataURL.call(this, file);
+            });
         };
         img.onerror = () => {
             URL.revokeObjectURL(objectUrl);

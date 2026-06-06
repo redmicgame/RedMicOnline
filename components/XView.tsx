@@ -189,7 +189,9 @@ const Post: React.FC<{ post: XPost; author: XUser | undefined; onQuote?: (post: 
     }
 
     const handleViewProfile = () => {
-        if (author.isPlayer || (!author.id.startsWith('hater_') && !['popbase', 'chartdata', 'spotifysnapshot'].includes(author.id))) {
+        if (gameState.onlineArtists?.some(a => a.id === author.id)) {
+            dispatch({ type: 'VIEW_SPOTIFY_PROFILE', payload: author.id });
+        } else if (author.isPlayer || (!author.id.startsWith('hater_') && !['popbase', 'chartdata', 'spotifysnapshot', 'tmz'].includes(author.id))) {
             dispatch({ type: 'VIEW_X_PROFILE', payload: author.id });
         }
     }
@@ -413,8 +415,16 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
     const { activeArtistData, gameState } = useGame();
     const { xPosts, xUsers } = activeArtistData!;
 
-    // Use global online posts if not offline
-    const allPosts = xPosts;
+    let allPosts = xPosts;
+    if (!gameState.offlineMode && gameState.onlinePosts) {
+        const merged = [...xPosts];
+        gameState.onlinePosts.forEach((op: any) => {
+            if (!merged.find(p => p.id === op.id)) {
+                merged.push(op);
+            }
+        });
+        allPosts = merged;
+    }
 
     const [displayCount, setDisplayCount] = useState(20);
 
@@ -494,13 +504,24 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
 };
 
 const ExploreView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) => {
-    const { activeArtistData, dispatch } = useGame();
+    const { activeArtistData, gameState, dispatch } = useGame();
     const { xTrends, xUsers, xPosts } = activeArtistData!;
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<{users: XUser[], posts: XPost[]}>({users: [], posts: []});
 
+    let allPosts = xPosts;
+    if (!gameState.offlineMode && gameState.onlinePosts) {
+        const merged = [...xPosts];
+        gameState.onlinePosts.forEach((op: any) => {
+            if (!merged.find(p => p.id === op.id)) {
+                merged.push(op);
+            }
+        });
+        allPosts = merged;
+    }
+
     // Find latest posts from PopBase/TMZ for news
-    const newsPosts = [...xPosts]
+    const newsPosts = [...allPosts]
         .filter(p => ['popbase', 'tmz', 'chartdata', 'spotifysnapshot'].includes(p.authorId))
         .slice(0, 3);
 
@@ -512,7 +533,31 @@ const ExploreView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote })
             isVerified: true, bio: 'Real-time Spotify numbers for your favorite artists.', followersCount: 1100000, followingCount: 0,
         }
     };
-    const findUser = (id: string) => xUsers.find(u => u.id === id) || SYSTEM_USERS_FALLBACK[id];
+    const findUser = (id: string, post?: XPost) => {
+        if (!gameState.offlineMode && id.startsWith('artist_') && gameState.onlineArtists) {
+            const onlineAuthor = gameState.onlineArtists.find(a => a.id === id);
+            if (onlineAuthor) {
+                return {
+                    id: onlineAuthor.id,
+                    name: onlineAuthor.name,
+                    username: onlineAuthor.name.replace(/\s+/g, '').toLowerCase(),
+                    avatar: onlineAuthor.avatar || 'https://ui-avatars.com/api/?background=random',
+                    isVerified: true
+                } as XUser;
+            }
+        }
+        let found = xUsers.find(u => u.id === id);
+        if (!found && post && (post as any).authorName) {
+            return {
+                id, 
+                name: (post as any).authorName, 
+                username: (post as any).authorName.replace(/\s+/g, '').toLowerCase(),
+                avatar: 'https://ui-avatars.com/api/?background=random', 
+                isVerified: false
+            } as XUser;
+        }
+        return found || SYSTEM_USERS_FALLBACK[id];
+    };
 
     useEffect(() => {
         if (!searchQuery.trim()) {
@@ -522,10 +567,10 @@ const ExploreView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote })
         
         const q = searchQuery.toLowerCase();
         const users = xUsers.filter(u => u.name.toLowerCase().includes(q) || u.username.toLowerCase().includes(q)).slice(0, 3);
-        const posts = xPosts.filter(p => p.content.toLowerCase().includes(q)).sort((a,b) => b.likes - a.likes).slice(0, 10);
+        const posts = allPosts.filter(p => p.content.toLowerCase().includes(q)).sort((a,b) => b.likes - a.likes).slice(0, 10);
         
         setSearchResults({users, posts});
-    }, [searchQuery, xUsers, xPosts]);
+    }, [searchQuery, xUsers, allPosts]);
 
     return (
         <div>

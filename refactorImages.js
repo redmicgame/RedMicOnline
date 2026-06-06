@@ -32,19 +32,37 @@ function walkSync(dir, filelist = []) {
   return filelist;
 }
 
+const fs = require('fs');
+const path = require('path');
+
+const searchDir = path.join(__dirname, 'components');
+
+function walkSync(dir, filelist = []) {
+  fs.readdirSync(dir).forEach(file => {
+    const dirFile = path.join(dir, file);
+    if (fs.statSync(dirFile).isDirectory()) {
+      filelist = walkSync(dirFile, filelist);
+    } else if (dirFile.endsWith('.tsx')) {
+      filelist.push(dirFile);
+    }
+  });
+  return filelist;
+}
+
 const files = walkSync(searchDir);
 
 files.forEach(file => {
     let content = fs.readFileSync(file, 'utf8');
     let original = content;
 
-    // Pattern to match:
-    // const file = ...;
+    // Pattern to look for:
     // const reader = new FileReader();
-    // reader.onload... = () => {
-    //     setSomething(reader.result...);
-    // };
-    // reader.readAsDataURL(file);
+    // reader.onload[end] = (async)? () => { ... reader.result ... };
+    // reader.readAsDataURL(...)
 
-    // Instead of complex regex, let's just make the handleImage uploads async and use resizeImage if dealing with images.
+    // Let's just do a string replace across the files.
+    // Wait, the regex could be tricky. 
+
+    // Better way: remove the monkeypatch from index.tsx and use a simpler monkey patch that just works.
 });
+

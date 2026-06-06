@@ -252,6 +252,18 @@ const AchievementsView: React.FC = () => {
                                     ? [...onlineArtists].sort((a: any, b: any) => (b.monthlyListeners || 0) - (a.monthlyListeners || 0))[0]
                                     : null;
 
+                                const mostViralArtist = onlineArtists.length > 0
+                                    ? [...onlineArtists].sort((a: any, b: any) => (b.hype || 0) - (a.hype || 0))[0]
+                                    : null;
+                                
+                                const mostControversialArtist = onlineArtists.length > 0
+                                    ? [...onlineArtists].sort((a: any, b: any) => (a.publicImage || 50) - (b.publicImage || 50))[0]
+                                    : null;
+
+                                const mostBelovedArtist = onlineArtists.length > 0
+                                    ? [...onlineArtists].sort((a: any, b: any) => (b.publicImage || 50) - (a.publicImage || 50))[0]
+                                    : null;
+
                                 const sortedByAge = [...onlineSongs].sort((a: any, b: any) => (a.createdAt || 0) - (b.createdAt || 0));
                                 const first10m = sortedByAge.find(s => (s.allTimeStreams || 0) >= 10000000);
                                 const first100m = sortedByAge.find(s => (s.allTimeStreams || 0) >= 100000000);
@@ -274,9 +286,36 @@ const AchievementsView: React.FC = () => {
                                             <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-blue-500/30 p-4 rounded-xl flex items-center gap-4">
                                                 <img src={peakListenersGlobal.avatar || `https://ui-avatars.com/api/?name=${peakListenersGlobal.name}`} alt="Most listeners" className="w-16 h-16 rounded-full shadow object-cover" />
                                                 <div className="min-w-0 flex-grow">
-                                                    <p className="text-xs font-bold text-blue-400 uppercase">Globally Most Monthly Listeners</p>
+                                                    <p className="text-xs font-bold text-blue-400 uppercase">Most Monthly Listeners</p>
                                                     <h3 className="text-lg font-bold truncate text-white">{peakListenersGlobal.name}</h3>
                                                     <p className="font-mono text-sm text-white mt-1">{formatNumber(peakListenersGlobal.monthlyListeners || 0)} listeners</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {mostViralArtist && (
+                                            <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-orange-500/30 p-4 rounded-xl flex items-center gap-4">
+                                                <img src={mostViralArtist.avatar || `https://ui-avatars.com/api/?name=${mostViralArtist.name}`} alt="Most Viral" className="w-16 h-16 rounded-full shadow object-cover" />
+                                                <div className="min-w-0 flex-grow">
+                                                    <p className="text-xs font-bold text-orange-400 uppercase">Most Viral/Popular</p>
+                                                    <h3 className="text-lg font-bold truncate text-white">{mostViralArtist.name}</h3>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {mostControversialArtist && (
+                                            <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-red-500/30 p-4 rounded-xl flex items-center gap-4">
+                                                <img src={mostControversialArtist.avatar || `https://ui-avatars.com/api/?name=${mostControversialArtist.name}`} alt="Most Controversial" className="w-16 h-16 rounded-full shadow object-cover" />
+                                                <div className="min-w-0 flex-grow">
+                                                    <p className="text-xs font-bold text-red-500 uppercase">Most Controversial</p>
+                                                    <h3 className="text-lg font-bold truncate text-white">{mostControversialArtist.name}</h3>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {mostBelovedArtist && (
+                                            <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-pink-500/30 p-4 rounded-xl flex items-center gap-4">
+                                                <img src={mostBelovedArtist.avatar || `https://ui-avatars.com/api/?name=${mostBelovedArtist.name}`} alt="Most Beloved" className="w-16 h-16 rounded-full shadow object-cover" />
+                                                <div className="min-w-0 flex-grow">
+                                                    <p className="text-xs font-bold text-pink-400 uppercase">Most Beloved</p>
+                                                    <h3 className="text-lg font-bold truncate text-white">{mostBelovedArtist.name}</h3>
                                                 </div>
                                             </div>
                                         )}

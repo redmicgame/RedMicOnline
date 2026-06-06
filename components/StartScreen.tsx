@@ -36,13 +36,17 @@ const StartScreen: React.FC = () => {
             const checkOnlineProfile = async () => {
                 setIsLoading(true);
                 try {
-                    const { getOrCreateUser, getArtistData } = await import('../firebase');
+                    const { getOrCreateUser, getArtistData, getArtistByOwnerId } = await import('../firebase');
                     const userData = await getOrCreateUser(user);
+                    
+                    let artist = null;
                     if (userData?.activeArtistId) {
-                        const artist = await getArtistData(userData.activeArtistId);
-                        if (artist) {
-                            setOnlineProfile(artist);
-                        }
+                        // getArtistData was pulling from old db, maybe try getArtistByOwnerId directly first!
+                    }
+                    artist = await getArtistByOwnerId(user.uid);
+                    
+                    if (artist) {
+                        setOnlineProfile(artist);
                     }
                 } catch (err) {
                     console.error("Error checking online profile:", err);
@@ -255,8 +259,9 @@ const StartScreen: React.FC = () => {
                     <form onSubmit={handleOnlineSubmit} className="space-y-4">
                         {!user ? (
                             <div className="text-center py-4 space-y-4">
+                                <h3 className="text-2xl font-black text-emerald-400 mb-2 mt-4 tracking-widest border-b border-emerald-500/30 pb-2 border-dashed">ONLINE LOGIN</h3>
                                 <p className="text-sm text-zinc-400 font-medium">To play the live MMO mode, you must sign in with Google.</p>
-                                <button type="button" onClick={login} className="w-full bg-white text-black hover:bg-zinc-200 font-bold py-3 px-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
+                                <button type="button" onClick={login} className="w-full bg-white text-black hover:bg-zinc-200 font-bold py-4 px-4 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
                                     Sign In with Google
                                 </button>
                                 <button type="button" onClick={handleWipeServer} className="mt-4 text-xs font-mono text-zinc-500 hover:text-red-400 opacity-50 hover:opacity-100">

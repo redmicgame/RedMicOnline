@@ -1059,7 +1059,7 @@ export interface GameState {
     cloudSaveId?: string;
     offlineMode?: boolean;
     difficultyMode?: 'easy' | 'normal' | 'hard' | 'extreme';
-    careerMode: 'solo' | 'group' | null;
+    careerMode: 'solo' | 'group' | 'online' | null;
     soloArtist: Artist | null;
     group: Group | null;
     activeArtistId: string | null;

@@ -273,6 +273,25 @@ export const createOnlineArtist = async (userId: string, name: string, genre: st
     }
 }
 
+export const getArtistByOwnerId = async (ownerId: string) => {
+    try {
+        const artistsRef = ref(db, 'artists_v6');
+        const snapshot = await get(artistsRef);
+        let foundArtist: any = null;
+        if (snapshot.exists()) {
+            snapshot.forEach((child) => {
+                if (child.val().ownerId === ownerId) {
+                    foundArtist = { id: child.key, ...child.val() };
+                }
+            });
+        }
+        return foundArtist;
+    } catch (err) {
+        console.error("Error getArtistByOwnerId", err);
+        return null;
+    }
+};
+
 export const getArtistData = async (artistId: string) => {
     const path = `artists/${artistId}`;
     try {

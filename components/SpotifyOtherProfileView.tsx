@@ -106,10 +106,12 @@ const SpotifyOtherProfileView: React.FC<{ artistId: string }> = ({ artistId }) =
                                  <div key={song.id || idx} className="flex items-center gap-4 group p-2 -mx-2 rounded-md hover:bg-white/10">
                                     <div className="text-zinc-400 font-semibold w-5 text-right">{idx + 1}</div>
                                     {/* Cover art fallback */}
-                                     <div className="w-10 h-10 bg-zinc-800 rounded-sm"></div>
-                                    <div className="flex-grow">
-                                        <p className="font-semibold text-white">{song.title}</p>
-                                        <p className="text-sm text-zinc-400">{formatNumber(song.weeklyStreams || 0)}</p>
+                                     <div className="w-10 h-10 bg-zinc-800 rounded-sm overflow-hidden flex-shrink-0">
+                                         {song.coverArt && <img src={song.coverArt} className="w-full h-full object-cover" />}
+                                     </div>
+                                    <div className="flex-grow min-w-0">
+                                        <p className="font-semibold text-white truncate">{song.title}</p>
+                                        <p className="text-sm text-zinc-400">{formatNumber(song.allTimeStreams || Math.floor((song.lastWeekStreams || 0) * 1.6) || 0)}</p>
                                     </div>
                                 </div>
                              ))}
@@ -124,9 +126,11 @@ const SpotifyOtherProfileView: React.FC<{ artistId: string }> = ({ artistId }) =
                              {albums.map((album) => (
                                  <div key={album.id} className="flex w-full text-left items-center gap-4 group">
                                      {/* Cover art fallback */}
-                                     <div className="w-16 h-16 bg-zinc-800 rounded"></div>
-                                    <div className="flex-grow">
-                                        <p className="font-semibold text-white text-lg">{album.title}</p>
+                                     <div className="w-16 h-16 bg-zinc-800 rounded overflow-hidden flex-shrink-0">
+                                         {album.coverArt && <img src={album.coverArt} className="w-full h-full object-cover" />}
+                                     </div>
+                                    <div className="flex-grow min-w-0">
+                                        <p className="font-semibold text-white text-lg truncate">{album.title}</p>
                                         <p className="text-sm text-zinc-400">
                                             {album.type || 'Release'}
                                         </p>

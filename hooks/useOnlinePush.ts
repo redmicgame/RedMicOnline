@@ -43,6 +43,7 @@ export const useOnlinePush = () => {
                     avatar: artistProfile.image || null,
                     publicImage: artistData.publicImage || 50,
                     popularity: artistData.popularity || 0,
+                    hype: artistData.hype || 0,
                     monthlyListeners: artistData.monthlyListeners || 0,
                     money: artistData.money || 0,
                     genre: artistData.songs[0]?.genre || "Pop",
